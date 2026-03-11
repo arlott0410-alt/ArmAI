@@ -11,9 +11,9 @@ import { facebookWebhookQuerySchema, facebookWebhookBodySchema } from '@armai/sh
 
 const app = new Hono<{ Bindings: Env }>();
 
-function verifySignature(body: string, signature: string | undefined, secret: string): boolean {
+async function verifySignature(body: string, signature: string | undefined, secret: string): Promise<boolean> {
   if (!signature || !secret) return false;
-  const expected = 'sha256=' + await hmacSha256(secret, body);
+  const expected = 'sha256=' + (await hmacSha256(secret, body));
   return signature === expected;
 }
 
@@ -55,7 +55,7 @@ app.post('/', async (c) => {
   const rawBody = await c.req.text();
   const signature = c.req.header('x-hub-signature-256');
   const secret = c.env.FACEBOOK_APP_SECRET;
-  if (secret && !verifySignature(rawBody, signature, secret)) {
+  if (secret && !(await verifySignature(rawBody, signature, secret))) {
     return c.json({ error: 'Invalid signature' }, 401);
   }
   const body = facebookWebhookBodySchema.safeParse(JSON.parse(rawBody));
