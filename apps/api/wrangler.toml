@@ -1,7 +1,7 @@
 # ArmAI API - Cloudflare Workers
 # Owner deploys manually; bindings and secrets configured in Cloudflare Dashboard.
 
-name = "armai-api"
+name = "armai"
 main = "src/index.ts"
 compatibility_date = "2024-11-01"
 

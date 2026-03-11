@@ -1,4 +1,4 @@
-import type { NormalizedTransaction } from '../types.js';
+import type { BankTransactionNormalized } from '../types.js';
 
 /**
  * Bank-specific parser: raw payload -> normalized transaction or throw.
@@ -8,5 +8,5 @@ export interface BankParser {
   id: string;
   version: string;
   /** Parse raw JSON body. Returns normalized transaction. */
-  parse(payload: unknown): NormalizedTransaction;
+  parse(payload: unknown): BankTransactionNormalized;
 }
