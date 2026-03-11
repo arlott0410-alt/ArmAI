@@ -3,3 +3,6 @@ export * from './merchant.js';
 export * from './orders.js';
 export * from './webhooks.js';
 export * from './bank.js';
+export * from './catalog.js';
+export * from './knowledge.js';
+export * from './payment.js';

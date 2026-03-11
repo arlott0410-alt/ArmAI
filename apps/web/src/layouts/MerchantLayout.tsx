@@ -21,6 +21,21 @@ export default function MerchantLayout() {
           <NavLink to="/merchant/orders" style={({ isActive }) => ({ color: isActive ? '#93c5fd' : '#cbd5e1', padding: 8, borderRadius: 4 })}>
             Orders
           </NavLink>
+          <NavLink to="/merchant/products" style={({ isActive }) => ({ color: isActive ? '#93c5fd' : '#cbd5e1', padding: 8, borderRadius: 4 })}>
+            Products
+          </NavLink>
+          <NavLink to="/merchant/categories" style={({ isActive }) => ({ color: isActive ? '#93c5fd' : '#cbd5e1', padding: 8, borderRadius: 4 })}>
+            Categories
+          </NavLink>
+          <NavLink to="/merchant/knowledge" style={({ isActive }) => ({ color: isActive ? '#93c5fd' : '#cbd5e1', padding: 8, borderRadius: 4 })}>
+            Knowledge
+          </NavLink>
+          <NavLink to="/merchant/promotions" style={({ isActive }) => ({ color: isActive ? '#93c5fd' : '#cbd5e1', padding: 8, borderRadius: 4 })}>
+            Promotions
+          </NavLink>
+          <NavLink to="/merchant/payment-accounts" style={({ isActive }) => ({ color: isActive ? '#93c5fd' : '#cbd5e1', padding: 8, borderRadius: 4 })}>
+            Payment accounts
+          </NavLink>
           <NavLink to="/merchant/bank-sync" style={({ isActive }) => ({ color: isActive ? '#93c5fd' : '#cbd5e1', padding: 8, borderRadius: 4 })}>
             Bank Sync
           </NavLink>

@@ -44,7 +44,7 @@ export interface MerchantSettings {
   updated_at: string;
 }
 
-/** Normalized slip extraction from AI. */
+/** Normalized slip extraction from AI. Includes receiver when visible. */
 export interface SlipExtraction {
   amount: number | null;
   sender_name: string | null;
@@ -52,6 +52,10 @@ export interface SlipExtraction {
   reference_code: string | null;
   confidence_score: number;
   raw_json: string;
+  /** Account-aware: receiver account number when visible on slip. */
+  receiver_account?: string | null;
+  receiver_bank?: string | null;
+  receiver_name?: string | null;
 }
 
 /** Normalized bank transaction from parser. */

@@ -128,3 +128,56 @@ export const supportApi = {
   merchantSettings: (token: string, merchantId: string) =>
     request<MerchantSettingsResponse>(`/support/merchants/${merchantId}/settings`, { token }),
 };
+
+export const productsApi = {
+  list: (token: string, params?: { categoryId?: string; status?: string }) => {
+    const q = new URLSearchParams();
+    if (params?.categoryId) q.set('categoryId', params.categoryId);
+    if (params?.status) q.set('status', params.status);
+    const query = q.toString();
+    return request<{ products: unknown[] }>(`/merchant/products${query ? `?${query}` : ''}`, { token });
+  },
+  get: (token: string, productId: string) => request<unknown>(`/merchant/products/${productId}`, { token }),
+  create: (token: string, body: unknown) => request<unknown>('/merchant/products', { method: 'POST', token, body }),
+  update: (token: string, productId: string, body: unknown) => request<unknown>(`/merchant/products/${productId}`, { method: 'PATCH', token, body }),
+  variants: (token: string, productId: string) => request<{ variants: unknown[] }>(`/merchant/products/${productId}/variants`, { token }),
+  keywords: (token: string, productId: string) => request<{ keywords: unknown[] }>(`/merchant/products/${productId}/keywords`, { token }),
+  addKeyword: (token: string, productId: string, keyword: string) => request<unknown>(`/merchant/products/${productId}/keywords`, { method: 'POST', token, body: { product_id: productId, keyword } }),
+  deleteKeyword: (token: string, productId: string, keywordId: string) => request<{ ok: boolean }>(`/merchant/products/${productId}/keywords/${keywordId}`, { method: 'DELETE', token }),
+};
+
+export const categoriesApi = {
+  list: (token: string) => request<{ categories: unknown[] }>('/merchant/categories', { token }),
+  create: (token: string, body: { name: string; description?: string | null; sort_order?: number; is_active?: boolean }) =>
+    request<unknown>('/merchant/categories', { method: 'POST', token, body }),
+  update: (token: string, categoryId: string, body: Partial<{ name: string; description?: string | null; sort_order?: number; is_active?: boolean }>) =>
+    request<unknown>(`/merchant/categories/${categoryId}`, { method: 'PATCH', token, body }),
+};
+
+export const knowledgeApi = {
+  faqs: (token: string) => request<{ faqs: unknown[] }>('/merchant/knowledge/faqs', { token }),
+  createFaq: (token: string, body: { question: string; answer: string; keywords?: string | null }) =>
+    request<unknown>('/merchant/knowledge/faqs', { method: 'POST', token, body }),
+  updateFaq: (token: string, faqId: string, body: Partial<{ question: string; answer: string }>) =>
+    request<unknown>(`/merchant/knowledge/faqs/${faqId}`, { method: 'PATCH', token, body }),
+  entries: (token: string) => request<{ entries: unknown[] }>('/merchant/knowledge/entries', { token }),
+  createEntry: (token: string, body: { type: string; title: string; content: string; keywords?: string | null }) =>
+    request<unknown>('/merchant/knowledge/entries', { method: 'POST', token, body }),
+  updateEntry: (token: string, entryId: string, body: Partial<{ type: string; title: string; content: string }>) =>
+    request<unknown>(`/merchant/knowledge/entries/${entryId}`, { method: 'PATCH', token, body }),
+};
+
+export const promotionsApi = {
+  list: (token: string) => request<{ promotions: unknown[] }>('/merchant/promotions', { token }),
+  create: (token: string, body: { title: string; content?: string | null }) =>
+    request<unknown>('/merchant/promotions', { method: 'POST', token, body }),
+};
+
+export const paymentAccountsApi = {
+  list: (token: string) => request<{ paymentAccounts: unknown[] }>('/merchant/payment-accounts', { token }),
+  get: (token: string, accountId: string) => request<unknown>(`/merchant/payment-accounts/${accountId}`, { token }),
+  create: (token: string, body: { bank_code: string; account_number: string; account_holder_name: string; account_name?: string | null; currency?: string; is_primary?: boolean; is_active?: boolean }) =>
+    request<unknown>('/merchant/payment-accounts', { method: 'POST', token, body }),
+  update: (token: string, accountId: string, body: Partial<{ bank_code: string; account_number: string; account_holder_name: string; is_primary: boolean; is_active: boolean }>) =>
+    request<unknown>(`/merchant/payment-accounts/${accountId}`, { method: 'PATCH', token, body }),
+};

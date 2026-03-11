@@ -4,6 +4,12 @@ import { authMiddleware, resolveMerchant, requireMerchantAdmin } from '../../mid
 import { getSupabaseAdmin } from '../../lib/supabase.js';
 import * as merchantService from '../../services/merchant.js';
 import * as orderService from '../../services/orders.js';
+import * as aiContext from '../../services/ai-context.js';
+import productsRoutes from './products.js';
+import categoriesRoutes from './categories.js';
+import knowledgeRoutes from './knowledge.js';
+import promotionsRoutes from './promotions.js';
+import paymentAccountsRoutes from './payment-accounts.js';
 
 const app = new Hono<{
   Bindings: Env;
@@ -55,6 +61,26 @@ app.get('/bank-sync', async (c) => {
     .order('created_at', { ascending: false })
     .limit(limit);
   return c.json({ bankTransactions: transactions ?? [], matchingResults: matchings ?? [] });
+});
+
+app.route('/products', productsRoutes);
+app.route('/categories', categoriesRoutes);
+app.route('/knowledge', knowledgeRoutes);
+app.route('/promotions', promotionsRoutes);
+app.route('/payment-accounts', paymentAccountsRoutes);
+
+app.post('/ai/context', async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const merchantId = c.get('merchantId');
+  const supabase = getSupabaseAdmin(c.env);
+  const { data: settings } = await supabase.from('merchant_settings').select('ai_system_prompt').eq('merchant_id', merchantId).single();
+  const context = await aiContext.buildAiContext(supabase, {
+    merchantId,
+    merchantPrompt: settings?.ai_system_prompt ?? null,
+    conversationId: (body as { conversationId?: string }).conversationId ?? null,
+    orderId: (body as { orderId?: string }).orderId ?? null,
+  });
+  return c.json(context);
 });
 
 export default app;

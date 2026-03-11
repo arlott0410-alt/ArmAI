@@ -19,7 +19,7 @@ export async function extractSlipFromImage(
         contents: [
           {
             parts: [
-              { text: 'Extract from this transfer slip image: amount (number), sender name, date/time, reference code. Reply with JSON only: {"amount": number or null, "sender_name": string or null, "datetime": ISO string or null, "reference_code": string or null, "confidence_score": 0-1}' },
+              { text: 'Extract from this transfer slip image: amount (number), sender name, date/time, reference code. If visible also extract: receiver account number, receiver bank name/code, receiver account holder name. Reply with JSON only: {"amount": number or null, "sender_name": string or null, "datetime": ISO string or null, "reference_code": string or null, "confidence_score": 0-1, "receiver_account": string or null, "receiver_bank": string or null, "receiver_name": string or null}' },
               { inline_data: { mime_type: 'image/jpeg', data: base64 } },
             ],
           },
@@ -45,6 +45,9 @@ export async function extractSlipFromImage(
   const datetime = typeof parsed.datetime === 'string' ? parsed.datetime : null;
   const reference_code = typeof parsed.reference_code === 'string' ? parsed.reference_code : null;
   const confidence_score = typeof parsed.confidence_score === 'number' ? parsed.confidence_score : 0;
+  const receiver_account = typeof parsed.receiver_account === 'string' ? parsed.receiver_account : null;
+  const receiver_bank = typeof parsed.receiver_bank === 'string' ? parsed.receiver_bank : null;
+  const receiver_name = typeof parsed.receiver_name === 'string' ? parsed.receiver_name : null;
   return {
     amount,
     sender_name,
@@ -52,5 +55,8 @@ export async function extractSlipFromImage(
     reference_code,
     confidence_score,
     raw_json: text,
+    receiver_account: receiver_account ?? undefined,
+    receiver_bank: receiver_bank ?? undefined,
+    receiver_name: receiver_name ?? undefined,
   };
 }

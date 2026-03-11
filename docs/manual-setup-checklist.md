@@ -30,6 +30,14 @@ Run these steps in order. Use placeholders below where values must be filled in 
   - `sql/008_rls_enable.sql`
   - `sql/009_policies.sql`
   - `sql/010_seed_minimal.sql`
+  - `sql/011_catalog_tables.sql`
+  - `sql/012_knowledge_tables.sql`
+  - `sql/013_payment_accounts.sql`
+  - `sql/014_order_items_and_targets.sql`
+  - `sql/015_extension_alter.sql`
+  - `sql/016_extension_indexes.sql`
+  - `sql/017_extension_rls.sql`
+  - `sql/018_extension_policies.sql`
 - [ ] Create first user in Authentication → Users (e.g. invite or sign up).
 - [ ] In SQL Editor, set super_admin role (replace `YOUR_USER_UUID` with the user’s UUID from Auth):
   ```sql
@@ -57,5 +65,5 @@ Run these steps in order. Use placeholders below where values must be filled in 
 
 - [ ] Open web app; sign in with super_admin user; open Super Dashboard and Merchants.
 - [ ] Create a test merchant from Super → Merchants.
-- [ ] Sign in as that merchant’s user (or use same user if added to merchant_members); open Merchant Dashboard, Orders, Settings.
+- [ ] Sign in as that merchant’s user (or use same user if added to merchant_members); open Merchant Dashboard, Orders, Products, Categories, Knowledge, Promotions, Payment accounts, Settings.
 - [ ] Call `GET /api/health` on the Worker; expect `{ ok: true, service: 'armai-api' }`.

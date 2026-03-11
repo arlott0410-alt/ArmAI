@@ -24,7 +24,8 @@ describe('computeMatchScore', () => {
     const factors = computeMatchScore(slip, bank);
     expect(factors.amountExact).toBe(true);
     expect(factors.amountScore).toBe(1);
-    expect(factors.totalScore).toBeGreaterThan(0.9);
+    expect(factors.receiverAccountScore).toBe(0.5);
+    expect(factors.totalScore).toBeGreaterThanOrEqual(0.9);
   });
 
   it('scores amount mismatch lower', () => {

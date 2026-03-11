@@ -24,6 +24,9 @@ export async function saveSlipExtraction(
     extraction_reference_code: payload.extraction.reference_code,
     extraction_confidence: payload.extraction.confidence_score,
     extraction_raw_json: payload.extraction.raw_json,
+    detected_receiver_account: payload.extraction.receiver_account ?? null,
+    detected_receiver_bank: payload.extraction.receiver_bank ?? null,
+    detected_receiver_name: payload.extraction.receiver_name ?? null,
   });
   if (slipErr) throw new Error(slipErr.message);
   await supabase

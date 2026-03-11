@@ -13,14 +13,16 @@ export interface MatchScoreFactors {
   timeScore: number;
   senderScore: number;
   referenceScore: number;
+  receiverAccountScore: number;
   totalScore: number;
 }
 
 const TIME_WINDOW_MS = 30 * 60 * 1000; // 30 minutes
-const AMOUNT_WEIGHT = 0.4;
-const TIME_WEIGHT = 0.25;
-const SENDER_WEIGHT = 0.2;
-const REFERENCE_WEIGHT = 0.15;
+const AMOUNT_WEIGHT = 0.35;
+const TIME_WEIGHT = 0.2;
+const SENDER_WEIGHT = 0.15;
+const REFERENCE_WEIGHT = 0.1;
+const RECEIVER_ACCOUNT_WEIGHT = 0.2;
 
 function normalizeForSimilarity(s: string | null | undefined): string {
   if (s == null || s === '') return '';
@@ -75,11 +77,24 @@ export function computeMatchScore(
     referenceScore = normalizeForSimilarity(slip.reference_code) === normalizeForSimilarity(bank.reference_code) ? 1 : 0;
   }
 
+  let receiverAccountScore = 0.5;
+  const expectedAccount = (bank as { detected_account_number?: string | null; expected_account_number?: string | null }).expected_account_number ??
+    (bank as { detected_account_number?: string | null }).detected_account_number;
+  const slipReceiver = slip.receiver_account ?? null;
+  const bankDetected = (bank as { detected_account_number?: string | null }).detected_account_number ?? null;
+  if (expectedAccount != null && expectedAccount !== '') {
+    const normalizedExpected = expectedAccount.replace(/\s/g, '');
+    if (slipReceiver != null && slipReceiver !== '' && normalizedExpected === slipReceiver.replace(/\s/g, '')) receiverAccountScore = 1;
+    else if (bankDetected != null && normalizedExpected === bankDetected.replace(/\s/g, '')) receiverAccountScore = 1;
+    else if (slipReceiver != null && slipReceiver !== '' && bankDetected != null && slipReceiver.replace(/\s/g, '') === bankDetected.replace(/\s/g, '')) receiverAccountScore = 0.8;
+  }
+
   const totalScore =
     AMOUNT_WEIGHT * amountScore +
     TIME_WEIGHT * timeScore +
     SENDER_WEIGHT * senderScore +
-    REFERENCE_WEIGHT * referenceScore;
+    REFERENCE_WEIGHT * referenceScore +
+    RECEIVER_ACCOUNT_WEIGHT * receiverAccountScore;
 
   return {
     amountExact,
@@ -87,6 +102,7 @@ export function computeMatchScore(
     timeScore,
     senderScore,
     referenceScore,
+    receiverAccountScore,
     totalScore,
   };
 }

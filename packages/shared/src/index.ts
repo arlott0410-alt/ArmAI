@@ -3,3 +3,6 @@ export * from './types.js';
 export * from './schemas/index.js';
 export * from './matching/index.js';
 export * from './parsers/index.js';
+export * from './catalog/index.js';
+export * from './knowledge/index.js';
+export * from './payment/index.js';

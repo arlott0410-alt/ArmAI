@@ -55,6 +55,7 @@ The dashboard is a **Vite SPA on Cloudflare Pages** talking to the **Worker API*
 - [Deployment](docs/deployment.md)
 - [Manual setup checklist](docs/manual-setup-checklist.md)
 - [Testing](docs/testing.md)
+- [Commerce extension](docs/extension-commerce.md) — product catalog, knowledge base, payment accounts, draft orders, account-aware slip/matching.
 
 ## Security
 
