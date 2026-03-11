@@ -5,10 +5,11 @@ name = "armai-api"
 main = "src/index.ts"
 compatibility_date = "2024-11-01"
 
-# R2 bucket for slip images
+# R2 bucket for slip images (name must be 3–63 chars, lowercase, numbers, hyphens only)
+# Create a bucket with this name in Dashboard → R2 if it does not exist
 [[r2_buckets]]
 binding = "SLIP_BUCKET"
-bucket_name = "TODO_REQUIRED_MANUAL_INPUT_R2_BUCKET_NAME"
+bucket_name = "armai-slips"
 
 # Secrets (set in Dashboard or wrangler secret put):
 # SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY
