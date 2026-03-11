@@ -61,7 +61,7 @@ export interface MerchantListItem {
 export const superApi = {
   dashboard: (token: string) => request<SuperDashboardResponse>('/super/dashboard', { token }),
   merchants: (token: string) => request<{ merchants: MerchantListItem[] }>('/super/merchants', { token }),
-  createMerchant: (token: string, body: { name: string; slug: string; admin_email: string; admin_full_name?: string }) =>
+  createMerchant: (token: string, body: { name: string; slug: string; admin_email: string; admin_password: string; admin_full_name?: string }) =>
     request<{ merchantId: string; userId: string }>('/super/merchants', { method: 'POST', token, body }),
   supportStart: (token: string, merchantId: string) =>
     request<{ supportSessionId: string; merchantId: string; readOnly: boolean }>('/support/start', {

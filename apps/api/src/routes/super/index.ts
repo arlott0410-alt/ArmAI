@@ -64,11 +64,12 @@ app.post('/merchants', async (c) => {
 
 async function createAuthUserAndMembership(
   env: Env,
-  input: { admin_email: string; admin_full_name?: string }
+  input: { admin_email: string; admin_password: string; admin_full_name?: string }
 ): Promise<string> {
   const supabase = getSupabaseAdmin(env);
   const { data: authData, error } = await supabase.auth.admin.createUser({
     email: input.admin_email,
+    password: input.admin_password,
     email_confirm: true,
     user_metadata: { full_name: input.admin_full_name },
   });

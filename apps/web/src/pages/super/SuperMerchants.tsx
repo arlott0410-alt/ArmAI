@@ -11,6 +11,7 @@ export default function SuperMerchants() {
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
   const [adminEmail, setAdminEmail] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
   const [addError, setAddError] = useState<string | null>(null);
   const [addLoading, setAddLoading] = useState(false);
   const token = user?.accessToken ?? null;
@@ -28,11 +29,12 @@ export default function SuperMerchants() {
     setAddError(null);
     setAddLoading(true);
     try {
-      await superApi.createMerchant(token!, { name, slug, admin_email: adminEmail });
+      await superApi.createMerchant(token!, { name, slug, admin_email: adminEmail, admin_password: adminPassword });
       setAddOpen(false);
       setName('');
       setSlug('');
       setAdminEmail('');
+      setAdminPassword('');
       load();
     } catch (err) {
       setAddError(err instanceof Error ? err.message : 'Failed');
@@ -66,6 +68,10 @@ export default function SuperMerchants() {
             <div style={{ marginBottom: 12 }}>
               <label style={{ display: 'block', marginBottom: 4 }}>Admin email</label>
               <input type="email" value={adminEmail} onChange={(e) => setAdminEmail(e.target.value)} required style={{ width: '100%', maxWidth: 320, padding: 8, border: '1px solid #ccc', borderRadius: 4 }} />
+            </div>
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ display: 'block', marginBottom: 4 }}>รหัสผ่านแอดมิน (อย่างน้อย 6 ตัว)</label>
+              <input type="password" value={adminPassword} onChange={(e) => setAdminPassword(e.target.value)} required minLength={6} placeholder="ตั้งรหัสผ่านสำหรับล็อกอิน" style={{ width: '100%', maxWidth: 320, padding: 8, border: '1px solid #ccc', borderRadius: 4 }} />
             </div>
             {addError && <p style={{ color: '#b91c1c', marginBottom: 8 }}>{addError}</p>}
             <button type="submit" disabled={addLoading} style={{ marginRight: 8, padding: '8px 16px', background: '#2563eb', color: '#fff', border: 0, borderRadius: 4 }}>

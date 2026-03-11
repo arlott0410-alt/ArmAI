@@ -4,6 +4,7 @@ export const createMerchantBodySchema = z.object({
   name: z.string().min(1).max(255),
   slug: z.string().min(1).max(64).regex(/^[a-z0-9-]+$/),
   admin_email: z.string().email(),
+  admin_password: z.string().min(6, 'รหัสผ่านอย่างน้อย 6 ตัว'),
   admin_full_name: z.string().max(255).optional(),
 });
 
