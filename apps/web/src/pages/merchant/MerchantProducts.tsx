@@ -1,22 +1,18 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { productsApi, categoriesApi } from '../../lib/api';
+import { productsApi } from '../../lib/api';
 
 export default function MerchantProducts() {
   const { user } = useAuth();
   const [products, setProducts] = useState<unknown[]>([]);
-  const [categories, setCategories] = useState<unknown[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const token = user?.accessToken ?? null;
 
   useEffect(() => {
     if (!token) return;
-    Promise.all([productsApi.list(token), categoriesApi.list(token)])
-      .then(([p, c]) => {
-        setProducts((p as { products: unknown[] }).products);
-        setCategories((c as { categories: unknown[] }).categories);
-      })
+    productsApi.list(token)
+      .then((p) => setProducts((p as { products: unknown[] }).products))
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, [token]);
