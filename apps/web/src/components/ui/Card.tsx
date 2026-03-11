@@ -1,10 +1,10 @@
 import React from 'react';
+import { theme } from '../../theme';
 
 const cardStyle: React.CSSProperties = {
-  background: '#fff',
-  borderRadius: 8,
-  boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-  border: '1px solid #e5e7eb',
+  background: theme.surface,
+  borderRadius: 10,
+  border: `1px solid ${theme.borderMuted}`,
   overflow: 'hidden',
 };
 
@@ -22,8 +22,15 @@ export function Card({
 
 export function CardHeader({ title, action, style }: { title: string; action?: React.ReactNode; style?: React.CSSProperties }) {
   return (
-    <div style={{ padding: '16px 20px', borderBottom: '1px solid #e5e7eb', display: 'flex', justifyContent: 'space-between', alignItems: 'center', ...style }}>
-      <h3 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: '#111827' }}>{title}</h3>
+    <div style={{
+      padding: '14px 20px',
+      borderBottom: `1px solid ${theme.borderMuted}`,
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      ...style,
+    }}>
+      <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: theme.text, letterSpacing: '0.02em' }}>{title}</h3>
       {action}
     </div>
   );

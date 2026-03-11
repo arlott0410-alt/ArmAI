@@ -1,28 +1,69 @@
+/* ArmAI premium theme: Black + Gold */
+:root {
+  --armai-bg: #0B0B0B;
+  --armai-surface: #121212;
+  --armai-primary: #D4AF37;
+  --armai-highlight: #F5D67A;
+  --armai-text: #fafafa;
+  --armai-text-muted: #71717a;
+}
+
 * {
   box-sizing: border-box;
 }
+
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   font-size: 14px;
   line-height: 1.5;
-  color: #1a1a1a;
-  background: #f5f5f5;
+  color: var(--armai-text);
+  background: var(--armai-bg);
 }
+
 #root {
   min-height: 100vh;
 }
+
 a {
-  color: #2563eb;
+  color: var(--armai-highlight);
   text-decoration: none;
 }
+
 a:hover {
   text-decoration: underline;
 }
+
 button {
   font: inherit;
   cursor: pointer;
 }
-input, textarea, select {
+
+input,
+textarea,
+select {
   font: inherit;
+}
+
+/* Form controls on dark surfaces */
+input,
+textarea,
+select {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--armai-text);
+  border-radius: 6px;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--armai-text-muted);
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--armai-primary);
+  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2);
 }

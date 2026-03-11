@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { superApi, type SuperMerchantDetailResponse } from '../../lib/api';
-import { PageShell, Card, CardHeader, CardBody, Badge, Section, EmptyState } from '../../components/ui';
+import { PageShell, Card, CardHeader, CardBody, Section, EmptyState, StatusBadge } from '../../components/ui';
+import { theme } from '../../theme';
 
 export default function SuperMerchantDetail() {
   const { id } = useParams<{ id: string }>();
@@ -45,8 +46,8 @@ export default function SuperMerchantDetail() {
     }
   };
 
-  if (error) return <p style={{ color: '#b91c1c' }}>{error}</p>;
-  if (!data) return <p>Loading...</p>;
+  if (error) return <p style={{ color: theme.danger }}>{error}</p>;
+  if (!data) return <p style={{ color: theme.textSecondary }}>Loading...</p>;
 
   const merchant = data.merchant as { id: string; name: string; slug: string; billing_status: string };
   const plan = data.plan as Record<string, unknown> | null;
@@ -57,21 +58,19 @@ export default function SuperMerchantDetail() {
       description={merchant.slug}
       breadcrumb={<Link to="/super/merchants">Merchants</Link>}
       actions={
-        <>
-          <button type="button" onClick={handleSupport} style={{ padding: '8px 16px', background: '#2563eb', color: '#fff', border: 0, borderRadius: 4 }}>
-            Open support (read-only)
-          </button>
-        </>
+        <button type="button" onClick={handleSupport} style={{ padding: '10px 18px', background: theme.primary, color: theme.background, border: 0, borderRadius: 6, fontWeight: 600, fontSize: 13 }}>
+          Open support (read-only)
+        </button>
       }
     >
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 24 }}>
         <Card>
           <CardHeader title="Summary" />
           <CardBody>
-            <p style={{ margin: '0 0 8px' }}><strong>Slug:</strong> {merchant.slug}</p>
-            <p style={{ margin: '0 0 8px' }}><strong>Status:</strong> <Badge variant={merchant.billing_status === 'active' ? 'success' : merchant.billing_status === 'past_due' ? 'danger' : 'warning'}>{merchant.billing_status}</Badge></p>
-            <p style={{ margin: '0 0 8px' }}><strong>Products:</strong> {data.productCount}</p>
-            <p style={{ margin: 0 }}><strong>Payment accounts:</strong> {data.paymentAccountCount}</p>
+            <p style={{ margin: '0 0 8px', color: theme.text }}><strong>Slug:</strong> {merchant.slug}</p>
+            <p style={{ margin: '0 0 8px', color: theme.text }}><strong>Status:</strong> <StatusBadge status={merchant.billing_status} /></p>
+            <p style={{ margin: '0 0 8px', color: theme.text }}><strong>Products:</strong> {data.productCount}</p>
+            <p style={{ margin: 0, color: theme.text }}><strong>Payment accounts:</strong> {data.paymentAccountCount}</p>
           </CardBody>
         </Card>
 
@@ -80,13 +79,13 @@ export default function SuperMerchantDetail() {
           <CardBody>
             {plan != null ? (
               <>
-                <p style={{ margin: '0 0 8px' }}><strong>Plan:</strong> {String(plan.plan_code ?? '—')}</p>
-                <p style={{ margin: '0 0 8px' }}><strong>Monthly:</strong> ${Number(plan.monthly_price_usd ?? 0)}</p>
-                <p style={{ margin: '0 0 8px' }}><strong>Next billing:</strong> {plan.next_billing_at ? new Date(String(plan.next_billing_at)).toLocaleDateString() : '—'}</p>
-                <p style={{ margin: 0 }}><strong>Last paid:</strong> {plan.last_paid_at ? new Date(String(plan.last_paid_at)).toLocaleDateString() : '—'}</p>
+                <p style={{ margin: '0 0 8px', color: theme.text }}><strong>Plan:</strong> {String(plan.plan_code ?? '—')}</p>
+                <p style={{ margin: '0 0 8px', color: theme.text }}><strong>Monthly:</strong> ${Number(plan.monthly_price_usd ?? 0)}</p>
+                <p style={{ margin: '0 0 8px', color: theme.text }}><strong>Next billing:</strong> {plan.next_billing_at ? new Date(String(plan.next_billing_at)).toLocaleDateString() : '—'}</p>
+                <p style={{ margin: 0, color: theme.text }}><strong>Last paid:</strong> {plan.last_paid_at ? new Date(String(plan.last_paid_at)).toLocaleDateString() : '—'}</p>
               </>
             ) : (
-              <p style={{ margin: 0, color: '#6b7280' }}>No plan record.</p>
+              <p style={{ margin: 0, color: theme.textMuted }}>No plan record.</p>
             )}
           </CardBody>
         </Card>
@@ -96,8 +95,8 @@ export default function SuperMerchantDetail() {
         <Card>
           <CardBody>
             <form onSubmit={handleAddNote} style={{ marginBottom: 16 }}>
-              <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Add internal note…" rows={2} style={{ width: '100%', padding: 8, border: '1px solid #e5e7eb', borderRadius: 4 }} />
-              <button type="submit" disabled={savingNote || !note.trim()} style={{ marginTop: 8, padding: '8px 16px', background: '#2563eb', color: '#fff', border: 0, borderRadius: 4 }}>Add note</button>
+              <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Add internal note…" rows={2} style={{ width: '100%', padding: 10 }} />
+              <button type="submit" disabled={savingNote || !note.trim()} style={{ marginTop: 8, padding: '10px 18px', background: theme.primary, color: theme.background, border: 0, borderRadius: 6, fontWeight: 600 }}>Add note</button>
             </form>
             {data.notes.length === 0 ? (
               <EmptyState title="No notes" />

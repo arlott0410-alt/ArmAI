@@ -1,4 +1,5 @@
 import React from 'react';
+import { theme } from '../../theme';
 
 export function PageShell({
   title,
@@ -17,11 +18,17 @@ export function PageShell({
 }) {
   return (
     <div style={{ ...style }}>
-      {breadcrumb != null && <div style={{ marginBottom: 8, fontSize: 14, color: '#6b7280' }}>{breadcrumb}</div>}
+      {breadcrumb != null && (
+        <div style={{ marginBottom: 8, fontSize: 13, color: theme.textMuted }}>{breadcrumb}</div>
+      )}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12, marginBottom: 24 }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 600, color: '#111827' }}>{title}</h1>
-          {description != null && <p style={{ margin: '4px 0 0', fontSize: 14, color: '#6b7280' }}>{description}</p>}
+          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 600, color: theme.text, letterSpacing: '-0.02em' }}>
+            {title}
+          </h1>
+          {description != null && (
+            <p style={{ margin: '4px 0 0', fontSize: 14, color: theme.textSecondary }}>{description}</p>
+          )}
         </div>
         {actions != null && <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>{actions}</div>}
       </div>

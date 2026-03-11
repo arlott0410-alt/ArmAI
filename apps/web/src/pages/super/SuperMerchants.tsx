@@ -1,10 +1,30 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { superApi, type MerchantListItem } from '../../lib/api';
-import { PageShell, Card, CardBody, Badge, EmptyState } from '../../components/ui';
+import { PageShell, Card, CardBody, EmptyState, StatusBadge, MerchantTable } from '../../components/ui';
+import { theme } from '../../theme';
+
+const primaryBtn = {
+  padding: '10px 18px',
+  background: theme.primary,
+  color: theme.background,
+  border: 0,
+  borderRadius: 6,
+  fontWeight: 600,
+  fontSize: 13,
+};
+const secondaryBtn = {
+  padding: '10px 18px',
+  background: 'transparent',
+  color: theme.textSecondary,
+  border: `1px solid ${theme.borderMuted}`,
+  borderRadius: 6,
+  fontSize: 13,
+};
 
 export default function SuperMerchants() {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [merchants, setMerchants] = useState<MerchantListItem[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -45,87 +65,82 @@ export default function SuperMerchants() {
     }
   };
 
-  if (error) return <p style={{ color: '#b91c1c' }}>{error}</p>;
+  if (error) return <p style={{ color: theme.danger }}>{error}</p>;
+
+  const columns = [
+    { key: 'name', header: 'Name', render: (m: MerchantListItem) => <Link to={`/super/merchants/${m.id}`} style={{ fontWeight: 600, color: theme.highlight }}>{m.name}</Link> },
+    { key: 'slug', header: 'Slug', render: (m: MerchantListItem) => m.slug },
+    { key: 'admin_email', header: 'Admin email', render: (m: MerchantListItem) => m.admin_email ?? '—' },
+    { key: 'plan_code', header: 'Plan', render: (m: MerchantListItem) => m.plan_code ?? '—' },
+    { key: 'monthly_price_usd', header: 'Monthly', render: (m: MerchantListItem) => `$${m.monthly_price_usd ?? 0}` },
+    { key: 'billing_status', header: 'Billing', render: (m: MerchantListItem) => <StatusBadge status={m.billing_status} /> },
+    { key: 'next_billing_at', header: 'Next billing', render: (m: MerchantListItem) => m.next_billing_at ? new Date(m.next_billing_at).toLocaleDateString() : '—' },
+    { key: 'setup_percent', header: 'Setup %', render: (m: MerchantListItem) => `${m.setup_percent ?? 0}%` },
+    { key: 'product_count', header: 'Products', render: (m: MerchantListItem) => String(m.product_count ?? 0) },
+    { key: 'payment_account_count', header: 'Payments', render: (m: MerchantListItem) => String(m.payment_account_count ?? 0) },
+    {
+      key: 'actions',
+      header: 'Actions',
+      render: (m: MerchantListItem) => (
+        <>
+          <Link to={`/super/merchants/${m.id}`} style={{ marginRight: 12, color: theme.primary }}>View</Link>
+          <Link to={`/super/support?merchantId=${m.id}`} style={{ color: theme.primary }}>Support</Link>
+        </>
+      ),
+    },
+  ];
 
   return (
     <PageShell
       title="Merchants"
       description="Manage merchant tenants"
-      actions={
-        <button onClick={() => setAddOpen(true)} style={{ padding: '8px 16px', background: '#2563eb', color: '#fff', border: 0, borderRadius: 4 }}>
-          Add Merchant
-        </button>
-      }
+      actions={<button onClick={() => setAddOpen(true)} style={primaryBtn}>Add Merchant</button>}
     >
       {addOpen && (
         <Card style={{ marginBottom: 24 }}>
           <CardBody>
-            <h3 style={{ marginTop: 0 }}>Add Merchant</h3>
+            <h3 style={{ marginTop: 0, marginBottom: 16, color: theme.text, fontSize: 15 }}>Add Merchant</h3>
             <form onSubmit={handleAdd}>
               <div style={{ marginBottom: 12 }}>
-                <label style={{ display: 'block', marginBottom: 4 }}>Name</label>
-                <input value={name} onChange={(e) => setName(e.target.value)} required style={{ width: '100%', maxWidth: 320, padding: 8, border: '1px solid #e5e7eb', borderRadius: 4 }} />
+                <label style={{ display: 'block', marginBottom: 4, color: theme.textSecondary, fontSize: 13 }}>Name</label>
+                <input value={name} onChange={(e) => setName(e.target.value)} required style={{ width: '100%', maxWidth: 320, padding: 10 }} />
               </div>
               <div style={{ marginBottom: 12 }}>
-                <label style={{ display: 'block', marginBottom: 4 }}>Slug</label>
-                <input value={slug} onChange={(e) => setSlug(e.target.value)} required placeholder="a-z0-9-" style={{ width: '100%', maxWidth: 320, padding: 8, border: '1px solid #e5e7eb', borderRadius: 4 }} />
+                <label style={{ display: 'block', marginBottom: 4, color: theme.textSecondary, fontSize: 13 }}>Slug</label>
+                <input value={slug} onChange={(e) => setSlug(e.target.value)} required placeholder="a-z0-9-" style={{ width: '100%', maxWidth: 320, padding: 10 }} />
               </div>
               <div style={{ marginBottom: 12 }}>
-                <label style={{ display: 'block', marginBottom: 4 }}>Admin email</label>
-                <input type="email" value={adminEmail} onChange={(e) => setAdminEmail(e.target.value)} required style={{ width: '100%', maxWidth: 320, padding: 8, border: '1px solid #e5e7eb', borderRadius: 4 }} />
+                <label style={{ display: 'block', marginBottom: 4, color: theme.textSecondary, fontSize: 13 }}>Admin email</label>
+                <input type="email" value={adminEmail} onChange={(e) => setAdminEmail(e.target.value)} required style={{ width: '100%', maxWidth: 320, padding: 10 }} />
               </div>
               <div style={{ marginBottom: 12 }}>
-                <label style={{ display: 'block', marginBottom: 4 }}>รหัสผ่านแอดมิน (อย่างน้อย 6 ตัว)</label>
-                <input type="password" value={adminPassword} onChange={(e) => setAdminPassword(e.target.value)} required minLength={6} placeholder="ตั้งรหัสผ่านสำหรับล็อกอิน" style={{ width: '100%', maxWidth: 320, padding: 8, border: '1px solid #e5e7eb', borderRadius: 4 }} />
+                <label style={{ display: 'block', marginBottom: 4, color: theme.textSecondary, fontSize: 13 }}>รหัสผ่านแอดมิน (อย่างน้อย 6 ตัว)</label>
+                <input type="password" value={adminPassword} onChange={(e) => setAdminPassword(e.target.value)} required minLength={6} placeholder="ตั้งรหัสผ่านสำหรับล็อกอิน" style={{ width: '100%', maxWidth: 320, padding: 10 }} />
               </div>
-              {addError && <p style={{ color: '#b91c1c', marginBottom: 8 }}>{addError}</p>}
-              <button type="submit" disabled={addLoading} style={{ marginRight: 8, padding: '8px 16px', background: '#2563eb', color: '#fff', border: 0, borderRadius: 4 }}>Create</button>
-              <button type="button" onClick={() => setAddOpen(false)} style={{ padding: '8px 16px', border: '1px solid #e5e7eb', borderRadius: 4 }}>Cancel</button>
+              {addError && <p style={{ color: theme.danger, marginBottom: 8 }}>{addError}</p>}
+              <button type="submit" disabled={addLoading} style={primaryBtn}>Create</button>
+              <button type="button" onClick={() => setAddOpen(false)} style={{ ...secondaryBtn, marginLeft: 8 }}>Cancel</button>
             </form>
           </CardBody>
         </Card>
       )}
       {loading ? (
-        <p>Loading...</p>
+        <p style={{ color: theme.textSecondary }}>Loading...</p>
       ) : merchants.length === 0 ? (
-        <Card><CardBody><EmptyState title="No merchants yet" description="Add a merchant to get started." action={<button onClick={() => setAddOpen(true)} style={{ padding: '8px 16px', background: '#2563eb', color: '#fff', border: 0, borderRadius: 4 }}>Add Merchant</button>} /></CardBody></Card>
+        <Card>
+          <CardBody>
+            <EmptyState title="No merchants yet" description="Add a merchant to get started." action={<button onClick={() => setAddOpen(true)} style={primaryBtn}>Add Merchant</button>} />
+          </CardBody>
+        </Card>
       ) : (
         <Card>
-          <CardBody style={{ padding: 0, overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
-              <thead>
-                <tr style={{ background: '#f9fafb', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>
-                  <th style={{ padding: 12 }}>Name</th>
-                  <th style={{ padding: 12 }}>Slug</th>
-                  <th style={{ padding: 12 }}>Admin email</th>
-                  <th style={{ padding: 12 }}>Plan</th>
-                  <th style={{ padding: 12 }}>Monthly</th>
-                  <th style={{ padding: 12 }}>Billing</th>
-                  <th style={{ padding: 12 }}>Next billing</th>
-                  <th style={{ padding: 12 }}>Setup %</th>
-                  <th style={{ padding: 12 }}>Products</th>
-                  <th style={{ padding: 12 }}>Payments</th>
-                  <th style={{ padding: 12 }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {merchants.map((m) => (
-                  <tr key={m.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                    <td style={{ padding: 12 }}><Link to={`/super/merchants/${m.id}`} style={{ fontWeight: 500, color: '#2563eb' }}>{m.name}</Link></td>
-                    <td style={{ padding: 12 }}>{m.slug}</td>
-                    <td style={{ padding: 12 }}>{m.admin_email ?? '—'}</td>
-                    <td style={{ padding: 12 }}>{m.plan_code ?? '—'}</td>
-                    <td style={{ padding: 12 }}>${m.monthly_price_usd ?? 0}</td>
-                    <td style={{ padding: 12 }}><Badge variant={m.billing_status === 'active' ? 'success' : m.billing_status === 'past_due' ? 'danger' : 'warning'}>{m.billing_status}</Badge></td>
-                    <td style={{ padding: 12 }}>{m.next_billing_at ? new Date(m.next_billing_at).toLocaleDateString() : '—'}</td>
-                    <td style={{ padding: 12 }}>{m.setup_percent ?? 0}%</td>
-                    <td style={{ padding: 12 }}>{m.product_count ?? 0}</td>
-                    <td style={{ padding: 12 }}>{m.payment_account_count ?? 0}</td>
-                    <td style={{ padding: 12 }}><Link to={`/super/merchants/${m.id}`} style={{ marginRight: 8, color: '#2563eb' }}>View</Link><Link to={`/super/support?merchantId=${m.id}`} style={{ color: '#2563eb' }}>Support</Link></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <CardBody style={{ padding: 0 }}>
+            <MerchantTable
+              columns={columns}
+              data={merchants}
+              onRowClick={(m) => navigate(`/super/merchants/${m.id}`)}
+              emptyMessage="No merchants."
+            />
           </CardBody>
         </Card>
       )}

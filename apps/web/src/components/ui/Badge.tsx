@@ -1,11 +1,13 @@
 import React from 'react';
+import { theme } from '../../theme';
 
 const variants: Record<string, React.CSSProperties> = {
-  default: { background: '#f3f4f6', color: '#374151' },
-  success: { background: '#d1fae5', color: '#065f46' },
-  warning: { background: '#fef3c7', color: '#92400e' },
-  danger: { background: '#fee2e2', color: '#991b1b' },
-  info: { background: '#dbeafe', color: '#1e40af' },
+  default: { background: 'rgba(255,255,255,0.1)', color: theme.textSecondary },
+  success: { background: theme.successMuted, color: theme.success },
+  warning: { background: theme.warningMuted, color: theme.warning },
+  danger: { background: theme.dangerMuted, color: theme.danger },
+  info: { background: theme.infoMuted, color: theme.info },
+  gold: { background: 'rgba(212, 175, 55, 0.2)', color: theme.highlight },
 };
 
 export function Badge({
@@ -21,11 +23,13 @@ export function Badge({
     <span
       style={{
         display: 'inline-block',
-        padding: '2px 8px',
+        padding: '3px 8px',
         borderRadius: 4,
-        fontSize: 12,
-        fontWeight: 500,
-        ...variants[variant] ?? variants.default,
+        fontSize: 11,
+        fontWeight: 600,
+        textTransform: 'uppercase',
+        letterSpacing: '0.04em',
+        ...(variants[variant] ?? variants.default),
         ...style,
       }}
     >

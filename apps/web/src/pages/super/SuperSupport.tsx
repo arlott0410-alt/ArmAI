@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { superApi, supportApi } from '../../lib/api';
 import type { OrderRow } from '../../lib/api';
+import { PageShell, Card, CardHeader, CardBody, StatusBadge } from '../../components/ui';
+import { theme } from '../../theme';
 
 export default function SuperSupport() {
   const { user } = useAuth();
@@ -41,65 +43,72 @@ export default function SuperSupport() {
   };
 
   return (
-    <div>
-      <h1>Support (God Mode)</h1>
-      <p style={{ color: '#64748b', marginBottom: 24 }}>
-        Read-only access to merchant data. All access is audited. Never impersonates session.
-      </p>
+    <PageShell title="Support" description="Read-only access to merchant data. All access is audited.">
       {supportActive && (
-        <div style={{ padding: 12, background: '#fef3c7', border: '1px solid #f59e0b', borderRadius: 4, marginBottom: 24 }}>
-          <strong>Read-only support mode active</strong> for merchant {merchants.find((m) => m.id === merchantId)?.name ?? merchantId}.
+        <div style={{ padding: 14, background: 'rgba(234, 179, 8, 0.15)', border: `1px solid ${theme.warning}`, borderRadius: 8, marginBottom: 24 }}>
+          <strong style={{ color: theme.text }}>Read-only support mode active</strong>
+          <span style={{ color: theme.textSecondary, marginLeft: 8 }}>for {merchants.find((m) => m.id === merchantId)?.name ?? merchantId}</span>
         </div>
       )}
-      <div style={{ marginBottom: 24 }}>
-        <label style={{ display: 'block', marginBottom: 8 }}>Select merchant</label>
-        <select
-          value={merchantId}
-          onChange={(e) => { setMerchantId(e.target.value); setOrders([]); }}
-          style={{ padding: 8, minWidth: 240, border: '1px solid #ccc', borderRadius: 4 }}
-        >
-          <option value="">—</option>
-          {merchants.map((m) => (
-            <option key={m.id} value={m.id}>{m.name} ({m.slug})</option>
-          ))}
-        </select>
-        <button onClick={startSupport} disabled={!merchantId || loading} style={{ marginLeft: 12, padding: '8px 16px', background: '#2563eb', color: '#fff', border: 0, borderRadius: 4 }}>
-          {loading ? 'Starting...' : 'Start support view'}
-        </button>
-      </div>
-      {error && <p style={{ color: '#b91c1c', marginBottom: 16 }}>{error}</p>}
-      {supportActive && orders.length >= 0 && (
-        <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-            <h2>Orders (read-only)</h2>
-            <button onClick={loadOrders} style={{ padding: '6px 12px', border: '1px solid #ccc', borderRadius: 4 }}>Refresh</button>
+      <Card style={{ marginBottom: 24 }}>
+        <CardBody>
+          <label style={{ display: 'block', marginBottom: 8, color: theme.textSecondary, fontSize: 13 }}>Select merchant</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <select
+              value={merchantId}
+              onChange={(e) => { setMerchantId(e.target.value); setOrders([]); }}
+              style={{ padding: 10, minWidth: 260 }}
+            >
+              <option value="">—</option>
+              {merchants.map((m) => (
+                <option key={m.id} value={m.id}>{m.name} ({m.slug})</option>
+              ))}
+            </select>
+            <button
+              onClick={startSupport}
+              disabled={!merchantId || loading}
+              style={{ padding: '10px 18px', background: theme.primary, color: theme.background, border: 0, borderRadius: 6, fontWeight: 600, fontSize: 13 }}
+            >
+              {loading ? 'Starting...' : 'Start support view'}
+            </button>
           </div>
-          {orders.length === 0 ? (
-            <p>No orders.</p>
-          ) : (
-            <table style={{ width: '100%', borderCollapse: 'collapse', background: '#fff', borderRadius: 8, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-              <thead>
-                <tr style={{ background: '#f8fafc', textAlign: 'left' }}>
-                  <th style={{ padding: 12 }}>ID</th>
-                  <th style={{ padding: 12 }}>Status</th>
-                  <th style={{ padding: 12 }}>Amount</th>
-                  <th style={{ padding: 12 }}>Created</th>
-                </tr>
-              </thead>
-              <tbody>
-                {orders.map((o) => (
-                  <tr key={o.id} style={{ borderTop: '1px solid #e2e8f0' }}>
-                    <td style={{ padding: 12 }}>{o.id.slice(0, 8)}…</td>
-                    <td style={{ padding: 12 }}>{o.status}</td>
-                    <td style={{ padding: 12 }}>{o.amount ?? '—'}</td>
-                    <td style={{ padding: 12 }}>{new Date(o.created_at).toLocaleString()}</td>
+        </CardBody>
+      </Card>
+      {error && <p style={{ color: theme.danger, marginBottom: 16 }}>{error}</p>}
+      {supportActive && (
+        <Card>
+          <CardHeader
+            title="Orders (read-only)"
+            action={<button onClick={loadOrders} style={{ padding: '8px 14px', border: `1px solid ${theme.borderMuted}`, borderRadius: 6, background: 'transparent', color: theme.textSecondary, fontSize: 13 }}>Refresh</button>}
+          />
+          <CardBody style={{ padding: 0 }}>
+            {orders.length === 0 ? (
+              <div style={{ padding: 40, textAlign: 'center', color: theme.textMuted }}>No orders.</div>
+            ) : (
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ textAlign: 'left', borderBottom: `1px solid ${theme.borderMuted}` }}>
+                    <th style={{ padding: '12px 16px', color: theme.textMuted, fontWeight: 600, fontSize: 11, textTransform: 'uppercase' }}>ID</th>
+                    <th style={{ padding: '12px 16px', color: theme.textMuted, fontWeight: 600, fontSize: 11, textTransform: 'uppercase' }}>Status</th>
+                    <th style={{ padding: '12px 16px', color: theme.textMuted, fontWeight: 600, fontSize: 11, textTransform: 'uppercase' }}>Amount</th>
+                    <th style={{ padding: '12px 16px', color: theme.textMuted, fontWeight: 600, fontSize: 11, textTransform: 'uppercase' }}>Created</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
+                </thead>
+                <tbody>
+                  {orders.map((o) => (
+                    <tr key={o.id} style={{ borderBottom: `1px solid ${theme.borderMuted}` }}>
+                      <td style={{ padding: '12px 16px' }}>{o.id.slice(0, 8)}…</td>
+                      <td style={{ padding: '12px 16px' }}><StatusBadge status={o.status} /></td>
+                      <td style={{ padding: '12px 16px' }}>{o.amount ?? '—'}</td>
+                      <td style={{ padding: '12px 16px' }}>{new Date(o.created_at).toLocaleString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </CardBody>
+        </Card>
       )}
-    </div>
+    </PageShell>
   );
 }

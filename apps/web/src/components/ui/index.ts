@@ -1,6 +1,14 @@
 export { Card, CardHeader, CardBody } from './Card';
 export { StatCard } from './StatCard';
 export { Badge } from './Badge';
+export { StatusBadge } from './StatusBadge';
+export { PanelCard } from './PanelCard';
+export { ActivityFeed } from './ActivityFeed';
+export type { ActivityItem } from './ActivityFeed';
+export { RevenueChart } from './RevenueChart';
+export type { RevenueChartPoint } from './RevenueChart';
+export { MerchantTable } from './MerchantTable';
+export type { MerchantTableColumn } from './MerchantTable';
 export { SectionHeader, Section } from './Section';
 export { EmptyState } from './EmptyState';
 export { PageShell } from './PageShell';
