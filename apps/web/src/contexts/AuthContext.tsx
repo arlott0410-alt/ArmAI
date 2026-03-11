@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
+import { getBaseUrl } from '../lib/api';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL ?? '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY ?? '';
@@ -22,7 +23,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AuthState>({ user: null, loading: true, error: null });
 
   const fetchMe = async (token: string) => {
-    const base = import.meta.env.VITE_API_URL ?? '/api';
+    const base = getBaseUrl();
     const res = await fetch(`${base}/auth/me`, { headers: { Authorization: `Bearer ${token}` } });
     if (!res.ok) throw new Error('Session invalid');
     const data = await res.json();

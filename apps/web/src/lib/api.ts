@@ -2,9 +2,13 @@
  * Typed API client for ArmAI backend. Base URL from env.
  */
 
-const getBaseUrl = (): string => {
-  return (import.meta as unknown as { env?: { VITE_API_URL?: string } }).env?.VITE_API_URL ?? '/api';
-};
+/** Base URL สำหรับ API; ลงท้ายด้วย /api เสมอ (Worker ใช้ path /api/...) */
+export function getBaseUrl(): string {
+  const url = (import.meta as unknown as { env?: { VITE_API_URL?: string } }).env?.VITE_API_URL ?? '';
+  if (!url) return '/api';
+  const u = url.replace(/\/$/, '');
+  return u.endsWith('/api') ? u : `${u}/api`;
+}
 
 async function request<T>(
   path: string,
