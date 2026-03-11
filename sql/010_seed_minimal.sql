@@ -1,0 +1,30 @@
+-- ArmAI SQL Schema - Part 10: Minimal seed
+-- WARNING: Super admin user and profile must be created outside this file.
+-- Supabase Auth users are created via Auth API (Dashboard or Admin API).
+--
+-- Manual steps required:
+-- 1. Create a user in Supabase Dashboard -> Authentication -> Users (or via signUp).
+-- 2. Note the user's UUID.
+-- 3. Run the block below with that UUID to set role to super_admin and optionally create first merchant.
+--
+-- Example (replace YOUR_USER_UUID with actual auth.users.id):
+--
+--   insert into public.profiles (id, email, full_name, role)
+--   values (
+--     'YOUR_USER_UUID',
+--     'admin@armai.com',
+--     'Super Admin',
+--     'super_admin'
+--   )
+--   on conflict (id) do update set role = 'super_admin', updated_at = now();
+--
+-- First merchant (optional, can be done via Control Plane UI):
+--
+--   insert into public.merchants (name, slug, billing_status)
+--   values ('Demo Merchant', 'demo', 'trialing')
+--   returning id;
+--   -- Then: insert into public.merchant_members (merchant_id, user_id, role)
+--   -- values ('<merchant_id>', 'YOUR_USER_UUID', 'merchant_admin');
+--   -- And: insert into public.merchant_settings (merchant_id) values ('<merchant_id>');
+
+-- No automatic seed that creates auth users. See docs/manual-setup-checklist.md.

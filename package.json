@@ -1,0 +1,23 @@
+{
+  "name": "armai",
+  "private": true,
+  "description": "ArmAI - Multi-tenant SaaS: Facebook chatbot, slip verification, bank webhook, auto-matching",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build -w packages/shared && npm run build -w apps/api && npm run build -w apps/web",
+    "build:api": "npm run build -w apps/api",
+    "build:web": "npm run build -w apps/web",
+    "build:shared": "npm run build -w packages/shared",
+    "test": "npm run test --workspaces --if-present",
+    "test:shared": "npm run test -w packages/shared",
+    "test:api": "npm run test -w apps/api",
+    "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

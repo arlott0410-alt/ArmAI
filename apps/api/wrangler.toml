@@ -1,0 +1,20 @@
+# ArmAI API - Cloudflare Workers
+# Owner deploys manually; bindings and secrets configured in Cloudflare Dashboard.
+
+name = "armai-api"
+main = "src/index.ts"
+compatibility_date = "2024-11-01"
+
+# R2 bucket for slip images
+[[r2_buckets]]
+binding = "SLIP_BUCKET"
+bucket_name = "TODO_REQUIRED_MANUAL_INPUT_R2_BUCKET_NAME"
+
+# Secrets (set in Dashboard or wrangler secret put):
+# SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY
+# GEMINI_API_KEY
+# FACEBOOK_APP_SECRET (for webhook signature verification)
+
+[vars]
+# Non-secret config; override in Dashboard for production
+ENVIRONMENT = "production"

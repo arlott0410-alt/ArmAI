@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build
+dist/
+.output/
+.wrangler/
+*.tsbuildinfo
+
+# Env / secrets (never commit)
+.env
+.env.local
+.env.*.local
+.dev.vars
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Test
+coverage/
+.nyc_output/
+
+# Misc
+*.local

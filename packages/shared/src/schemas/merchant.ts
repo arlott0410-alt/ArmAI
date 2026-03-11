@@ -1,0 +1,18 @@
+import { z } from 'zod';
+
+export const createMerchantBodySchema = z.object({
+  name: z.string().min(1).max(255),
+  slug: z.string().min(1).max(64).regex(/^[a-z0-9-]+$/),
+  admin_email: z.string().email(),
+  admin_full_name: z.string().max(255).optional(),
+});
+
+export type CreateMerchantBody = z.infer<typeof createMerchantBodySchema>;
+
+export const updateMerchantSettingsBodySchema = z.object({
+  ai_system_prompt: z.string().max(10000).nullable().optional(),
+  bank_parser_id: z.string().uuid().nullable().optional(),
+  webhook_verify_token: z.string().max(255).nullable().optional(),
+});
+
+export type UpdateMerchantSettingsBody = z.infer<typeof updateMerchantSettingsBodySchema>;
