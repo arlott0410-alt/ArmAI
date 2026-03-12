@@ -34,6 +34,7 @@ export default function MerchantDashboard() {
           <StatCard label="Paid today" value={summary.paidToday} />
           <StatCard label="Manual review" value={summary.manualReviewCount} />
           <StatCard label="Probable match" value={summary.probableMatchCount} />
+          <StatCard label="Ready to ship" value={summary.readyToShipCount ?? 0} />
           <StatCard label="Active products" value={summary.activeProductsCount} />
           <StatCard label="Payment accounts" value={summary.activePaymentAccountsCount} />
         </div>

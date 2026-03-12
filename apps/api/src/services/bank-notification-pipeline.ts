@@ -14,6 +14,7 @@ import {
 } from './account-scoping.js';
 import { ingestBankTransaction } from './bank-webhook.js';
 import { runMatchingForBankTransaction } from './matching.js';
+import * as summaryUpdate from './summary-update.js';
 
 export interface RawEventMeta {
   source_app_package?: string | null;
@@ -290,6 +291,7 @@ export async function processBankNotification(
       detectedAccountNumber: candidate.receiver_account_number ?? undefined,
     });
     matchingRan = true;
+    summaryUpdate.refreshMerchantSummary(supabase, merchantId).catch(() => {});
   }
 
   return {

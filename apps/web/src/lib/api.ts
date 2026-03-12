@@ -130,6 +130,7 @@ export interface MerchantDashboardSummary {
   paidToday: number;
   manualReviewCount: number;
   probableMatchCount: number;
+  readyToShipCount?: number;
   activeProductsCount: number;
   activePaymentAccountsCount: number;
 }

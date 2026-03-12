@@ -4,8 +4,15 @@ import type { SlipExtraction } from '@armai/shared';
 import type { BankTransactionNormalized } from '@armai/shared';
 import { ORDER_STATUS } from '@armai/shared';
 
+/** Only match against orders in these statuses (not yet paid). */
+const ELIGIBLE_ORDER_STATUSES = ['pending', 'slip_uploaded', 'slip_extracted', 'bank_pending_match', 'probable_match'] as const;
+/** Match only against orders created in the last N days. */
+const MATCHING_ORDER_WINDOW_DAYS = 90;
+const MAX_ELIGIBLE_ORDERS = 500;
+
 /**
  * Run matching for one bank transaction against order candidates (with slip extracted).
+ * Only scoped transactions should call this. Candidates are narrowed to eligible orders (recent, unpaid).
  * Inserts matching_results with score and status. Does NOT set order to paid.
  */
 export async function runMatchingForBankTransaction(
@@ -20,6 +27,21 @@ export async function runMatchingForBankTransaction(
     detectedAccountNumber?: string | null;
   }
 ) {
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - MATCHING_ORDER_WINDOW_DAYS);
+  const cutoffIso = cutoff.toISOString();
+
+  const { data: eligibleOrders } = await supabase
+    .from('orders')
+    .select('id')
+    .eq('merchant_id', payload.merchantId)
+    .in('status', [...ELIGIBLE_ORDER_STATUSES])
+    .gte('created_at', cutoffIso)
+    .order('created_at', { ascending: false })
+    .limit(MAX_ELIGIBLE_ORDERS);
+  const orderIds = (eligibleOrders ?? []).map((o: { id: string }) => o.id);
+  if (!orderIds.length) return;
+
   const { data: candidates } = await supabase
     .from('order_slips')
     .select(`
@@ -36,6 +58,7 @@ export async function runMatchingForBankTransaction(
       detected_receiver_name
     `)
     .eq('merchant_id', payload.merchantId)
+    .in('order_id', orderIds)
     .not('extraction_amount', 'is', null);
   if (!candidates?.length) return;
 

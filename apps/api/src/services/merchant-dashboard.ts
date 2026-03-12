@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import * as summaryUpdate from './summary-update.js';
 
 export interface MerchantDashboardSummary {
   merchantId: string;
@@ -7,6 +8,7 @@ export interface MerchantDashboardSummary {
   paidToday: number;
   manualReviewCount: number;
   probableMatchCount: number;
+  readyToShipCount?: number;
   activeProductsCount: number;
   activePaymentAccountsCount: number;
 }
@@ -18,39 +20,65 @@ export interface ReadinessItem {
   detail?: string;
 }
 
+/**
+ * Load merchant dashboard summary from precomputed table. If missing, refresh and return.
+ * Summary-first: avoids expensive live aggregation on every page load.
+ */
 export async function getMerchantDashboardSummary(
   supabase: SupabaseClient,
   merchantId: string
 ): Promise<MerchantDashboardSummary> {
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
-  const todayStartIso = todayStart.toISOString();
+  const { data: row } = await supabase
+    .from('merchant_dashboard_summaries')
+    .select('orders_today, pending_payment_count, paid_today_count, manual_review_count, probable_match_count, ready_to_ship_count, active_products_count, active_payment_accounts_count')
+    .eq('merchant_id', merchantId)
+    .maybeSingle();
 
-  const [orders, matchingResults, productCount, paymentCount] = await Promise.all([
-    supabase.from('orders').select('id, status, amount, created_at').eq('merchant_id', merchantId),
-    supabase.from('matching_results').select('id, status').eq('merchant_id', merchantId),
-    supabase.from('products').select('id', { count: 'exact', head: true }).eq('merchant_id', merchantId).eq('status', 'active'),
-    supabase.from('merchant_payment_accounts').select('id', { count: 'exact', head: true }).eq('merchant_id', merchantId).eq('is_active', true),
-  ]);
+  if (row) {
+    return {
+      merchantId,
+      ordersToday: row.orders_today ?? 0,
+      pendingPayment: row.pending_payment_count ?? 0,
+      paidToday: row.paid_today_count ?? 0,
+      manualReviewCount: row.manual_review_count ?? 0,
+      probableMatchCount: row.probable_match_count ?? 0,
+      readyToShipCount: row.ready_to_ship_count ?? 0,
+      activeProductsCount: row.active_products_count ?? 0,
+      activePaymentAccountsCount: row.active_payment_accounts_count ?? 0,
+    };
+  }
 
-  const orderList = orders.data ?? [];
-  const ordersToday = orderList.filter((o: { created_at: string }) => o.created_at >= todayStartIso).length;
-  const pendingPayment = orderList.filter((o: { status: string }) => o.status === 'pending' || o.status === 'slip_uploaded' || o.status === 'bank_pending_match').length;
-  const paidToday = orderList.filter((o: { status: string; created_at: string }) => o.status === 'paid' && o.created_at >= todayStartIso).length;
+  await summaryUpdate.refreshMerchantSummary(supabase, merchantId);
+  const { data: after } = await supabase
+    .from('merchant_dashboard_summaries')
+    .select('orders_today, pending_payment_count, paid_today_count, manual_review_count, probable_match_count, ready_to_ship_count, active_products_count, active_payment_accounts_count')
+    .eq('merchant_id', merchantId)
+    .single();
 
-  const matchList = matchingResults.data ?? [];
-  const manualReviewCount = matchList.filter((m: { status: string }) => m.status === 'manual_review').length;
-  const probableMatchCount = matchList.filter((m: { status: string }) => m.status === 'probable_match').length;
+  if (after) {
+    return {
+      merchantId,
+      ordersToday: after.orders_today ?? 0,
+      pendingPayment: after.pending_payment_count ?? 0,
+      paidToday: after.paid_today_count ?? 0,
+      manualReviewCount: after.manual_review_count ?? 0,
+      probableMatchCount: after.probable_match_count ?? 0,
+      readyToShipCount: after.ready_to_ship_count ?? 0,
+      activeProductsCount: after.active_products_count ?? 0,
+      activePaymentAccountsCount: after.active_payment_accounts_count ?? 0,
+    };
+  }
 
   return {
     merchantId,
-    ordersToday,
-    pendingPayment,
-    paidToday,
-    manualReviewCount,
-    probableMatchCount,
-    activeProductsCount: (productCount.count as number) ?? 0,
-    activePaymentAccountsCount: (paymentCount.count as number) ?? 0,
+    ordersToday: 0,
+    pendingPayment: 0,
+    paidToday: 0,
+    manualReviewCount: 0,
+    probableMatchCount: 0,
+    readyToShipCount: 0,
+    activeProductsCount: 0,
+    activePaymentAccountsCount: 0,
   };
 }
 

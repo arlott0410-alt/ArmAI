@@ -1,11 +1,16 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { ORDER_STATUS, MATCHING_RESULT_STATUS, PAYMENT_STATUS, FULFILLMENT_STATUS } from '@armai/shared';
 
+const DEFAULT_ORDERS_LIMIT = 50;
+const MAX_ORDERS_LIMIT = 100;
+
 export async function listOrders(
   supabase: SupabaseClient,
   merchantId: string,
-  opts: { status?: string; fulfillment_status?: string; limit?: number } = {}
+  opts: { status?: string; fulfillment_status?: string; limit?: number; offset?: number } = {}
 ) {
+  const limit = Math.min(opts.limit ?? DEFAULT_ORDERS_LIMIT, MAX_ORDERS_LIMIT);
+  const offset = opts.offset ?? 0;
   let q = supabase
     .from('orders')
     .select('*')
@@ -13,7 +18,7 @@ export async function listOrders(
     .order('created_at', { ascending: false });
   if (opts.status) q = q.eq('status', opts.status);
   if (opts.fulfillment_status) q = q.eq('fulfillment_status', opts.fulfillment_status);
-  if (opts.limit) q = q.limit(opts.limit);
+  q = q.range(offset, offset + limit - 1);
   const { data, error } = await q;
   if (error) throw new Error(error.message);
   return data ?? [];

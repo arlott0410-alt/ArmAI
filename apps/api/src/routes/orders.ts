@@ -5,6 +5,7 @@ import { getSupabaseAdmin } from '../lib/supabase.js';
 import * as orderService from '../services/orders.js';
 import * as orderDraft from '../services/order-draft.js';
 import * as telegram from '../services/telegram.js';
+import * as summaryUpdate from '../services/summary-update.js';
 import { z } from 'zod';
 import { confirmMatchBodySchema } from '@armai/shared';
 
@@ -39,6 +40,7 @@ app.post('/confirm-match', async (c) => {
       paymentMethod: order.payment_method ?? null,
       itemsSummary,
     }).catch(() => {});
+    summaryUpdate.refreshMerchantSummary(supabase, merchantId).catch(() => {});
   }
   return c.json({ ok: true });
 });

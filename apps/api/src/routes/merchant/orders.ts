@@ -8,6 +8,7 @@ import * as paymentMethodSwitch from '../../services/payment-method-switch.js';
 import * as paymentAccounts from '../../services/payment-accounts.js';
 import * as fulfillment from '../../services/fulfillment.js';
 import * as telegram from '../../services/telegram.js';
+import * as summaryUpdate from '../../services/summary-update.js';
 import { PAYMENT_METHOD, PAYMENT_SWITCH_RESULT, ORDER_COD_STATUS, PAYMENT_STATUS, ORDER_STATUS } from '@armai/shared';
 import { createShipmentBodySchema } from '@armai/shared';
 
@@ -22,8 +23,9 @@ app.get('/', async (c) => {
   const status = c.req.query('status');
   const fulfillment_status = c.req.query('fulfillment_status');
   const payment_method = c.req.query('payment_method');
-  const limit = c.req.query('limit') ? parseInt(c.req.query('limit'), 10) : 50;
-  let list = await orderService.listOrders(supabase, merchantId, { status, fulfillment_status, limit });
+  const limit = c.req.query('limit') ? parseInt(c.req.query('limit'), 10) : undefined;
+  const offset = c.req.query('offset') ? parseInt(c.req.query('offset'), 10) : undefined;
+  let list = await orderService.listOrders(supabase, merchantId, { status, fulfillment_status, limit, offset });
   if (payment_method) {
     list = list.filter((o: { payment_method?: string }) => o.payment_method === payment_method);
   }
@@ -236,6 +238,8 @@ app.post('/:orderId/cod/mark-collected', async (c) => {
     paymentMethod: order.payment_method ?? null,
     itemsSummary,
   }).catch(() => {});
+  const summaryUpdate = await import('../../services/summary-update.js');
+  summaryUpdate.refreshMerchantSummary(supabase, merchantId).catch(() => {});
   const detail = await orderDetail.getOrderDetail(supabase, merchantId, orderId);
   return c.json({ ok: true, order: detail });
 });
@@ -302,6 +306,7 @@ app.post('/:orderId/shipments', async (c) => {
       // non-fatal
     }
   }
+  summaryUpdate.refreshMerchantSummary(supabase, merchantId).catch(() => {});
   const detail = await orderDetail.getOrderDetail(supabase, merchantId, orderId);
   return c.json({ shipment, order: detail }, 201);
 });

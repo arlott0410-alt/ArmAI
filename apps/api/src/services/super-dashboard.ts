@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import * as summaryUpdate from './summary-update.js';
 
 export interface SuperDashboardKPIs {
   mrrThisMonth: number;
@@ -39,6 +40,9 @@ const now = new Date();
 const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
 const in7Days = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
 
+/**
+ * Load super dashboard from precomputed summary row. If missing, refresh and return.
+ */
 export async function getSuperDashboardSummary(supabase: SupabaseClient): Promise<{
   kpis: SuperDashboardKPIs;
   revenue: { currentMonthMRR: number; expectedNextBilling: number };
@@ -46,6 +50,55 @@ export async function getSuperDashboardSummary(supabase: SupabaseClient): Promis
   setupHealth: SetupHealthItem[];
   recentActivity: RecentActivityItem[];
 }> {
+  const { data: summaryRow } = await supabase
+    .from('super_dashboard_summaries')
+    .select('*')
+    .eq('id', '00000000-0000-0000-0000-000000000001')
+    .maybeSingle();
+
+  if (summaryRow) {
+    const [billingHealth, setupHealth, auditRows, supportRows] = await Promise.all([
+      getBillingHealthFromPlans(supabase),
+      getSetupHealthFromMerchants(supabase),
+      supabase.from('audit_logs').select('id, action, resource_type, resource_id, details, created_at').order('created_at', { ascending: false }).limit(20),
+      supabase.from('support_access_logs').select('id, merchant_id, started_at').order('started_at', { ascending: false }).limit(10),
+    ]);
+    const recentActivity: RecentActivityItem[] = [];
+    (auditRows.data ?? []).slice(0, 15).forEach((a: { id: string; action: string; resource_id: string | null; details: Record<string, unknown> | null; created_at: string }) => {
+      recentActivity.push({
+        type: a.action === 'support_access_merchant' ? 'support_access' : a.action === 'merchant_created' ? 'merchant_created' : 'audit',
+        id: a.id,
+        at: a.created_at,
+        merchantId: a.resource_id ?? undefined,
+        details: a.details ?? undefined,
+      });
+    });
+    (supportRows.data ?? []).slice(0, 5).forEach((s: { id: string; merchant_id: string; started_at: string }) => {
+      recentActivity.push({ type: 'support_access', id: s.id, at: s.started_at, merchantId: s.merchant_id });
+    });
+    recentActivity.sort((a, b) => (b.at < a.at ? -1 : 1));
+    recentActivity.splice(15);
+
+    return {
+      kpis: {
+        mrrThisMonth: Number(summaryRow.mrr_current_month ?? 0),
+        activeMerchants: summaryRow.active_merchants ?? 0,
+        trialingMerchants: summaryRow.trialing_merchants ?? 0,
+        pastDueMerchants: summaryRow.past_due_merchants ?? 0,
+        dueInNext7Days: summaryRow.due_soon_merchants ?? 0,
+        newMerchantsThisMonth: summaryRow.new_merchants_this_month ?? 0,
+        activationReadyCount: summaryRow.activation_ready_merchants ?? 0,
+      },
+      revenue: {
+        currentMonthMRR: Number(summaryRow.mrr_current_month ?? 0),
+        expectedNextBilling: Number(summaryRow.expected_next_billing_total ?? 0),
+      },
+      billingHealth,
+      setupHealth,
+      recentActivity,
+    };
+  }
+
   const [merchants, plans, productCounts, paymentCounts, settings, auditRows, supportRows] = await Promise.all([
     supabase.from('merchants').select('id, name, slug, billing_status, created_at').order('created_at', { ascending: false }),
     supabase.from('merchant_plans').select('merchant_id, billing_status, monthly_price_usd, trial_ends_at, next_billing_at'),
@@ -149,6 +202,8 @@ export async function getSuperDashboardSummary(supabase: SupabaseClient): Promis
   recentActivity.sort((a, b) => (b.at < a.at ? -1 : 1));
   recentActivity.splice(15);
 
+  summaryUpdate.refreshSuperSummary(supabase).catch(() => {});
+
   return {
     kpis: {
       mrrThisMonth,
@@ -164,6 +219,72 @@ export async function getSuperDashboardSummary(supabase: SupabaseClient): Promis
     setupHealth,
     recentActivity,
   };
+}
+
+async function getBillingHealthFromPlans(supabase: SupabaseClient): Promise<MerchantBillingHealth> {
+  const [merchants, plans] = await Promise.all([
+    supabase.from('merchants').select('id, name, billing_status'),
+    supabase.from('merchant_plans').select('merchant_id, billing_status, trial_ends_at, next_billing_at'),
+  ]);
+  const merchantList = merchants.data ?? [];
+  const planList = plans.data ?? [];
+  const planByMerchant: Record<string, { billing_status: string; trial_ends_at?: string | null; next_billing_at?: string | null }> = {};
+  planList.forEach((p: { merchant_id: string; billing_status: string; trial_ends_at?: string | null; next_billing_at?: string | null }) => {
+    planByMerchant[p.merchant_id] = p;
+  });
+  const dueSoon: MerchantBillingHealth['dueSoon'] = [];
+  const overdue: MerchantBillingHealth['overdue'] = [];
+  const trialEndingSoon: MerchantBillingHealth['trialEndingSoon'] = [];
+  const nowIso = now.toISOString();
+  for (const m of merchantList) {
+    const plan = planByMerchant[m.id];
+    const status = (m as { billing_status: string }).billing_status ?? plan?.billing_status ?? 'trialing';
+    const nextBilling = plan?.next_billing_at ?? null;
+    if (nextBilling && nextBilling < nowIso && status !== 'cancelled') overdue.push({ merchantId: m.id, name: (m as { name: string }).name, nextBillingAt: nextBilling });
+    else if (nextBilling && nextBilling <= in7Days) dueSoon.push({ merchantId: m.id, name: (m as { name: string }).name, nextBillingAt: nextBilling });
+    const trialEnds = plan?.trial_ends_at ?? null;
+    if (trialEnds && trialEnds <= in7Days && trialEnds >= nowIso) trialEndingSoon.push({ merchantId: m.id, name: (m as { name: string }).name, trialEndsAt: trialEnds });
+  }
+  return { dueSoon, overdue, trialEndingSoon };
+}
+
+async function getSetupHealthFromMerchants(supabase: SupabaseClient): Promise<SetupHealthItem[]> {
+  const [merchants, productCounts, paymentCounts, settings] = await Promise.all([
+    supabase.from('merchants').select('id, name, slug'),
+    supabase.from('products').select('merchant_id').then((r) => (r.data ?? []).reduce((acc: Record<string, number>, row: { merchant_id: string }) => {
+      acc[row.merchant_id] = (acc[row.merchant_id] ?? 0) + 1;
+      return acc;
+    }, {})),
+    supabase.from('merchant_payment_accounts').select('merchant_id').then((r) => (r.data ?? []).reduce((acc: Record<string, number>, row: { merchant_id: string }) => {
+      acc[row.merchant_id] = (acc[row.merchant_id] ?? 0) + 1;
+      return acc;
+    }, {})),
+    supabase.from('merchant_settings').select('merchant_id, ai_system_prompt').then((r) => {
+      const map: Record<string, boolean> = {};
+      (r.data ?? []).forEach((row: { merchant_id: string; ai_system_prompt: string | null }) => { map[row.merchant_id] = !!(row.ai_system_prompt?.trim()); });
+      return map;
+    }),
+  ]);
+  const merchantList = merchants.data ?? [];
+  const setupHealth: SetupHealthItem[] = [];
+  for (const m of merchantList) {
+    const productCount = productCounts[m.id] ?? 0;
+    const paymentCount = paymentCounts[m.id] ?? 0;
+    const hasPrompt = settings[m.id] ?? false;
+    const missingProducts = productCount === 0;
+    const noPaymentAccount = paymentCount === 0;
+    const noAiPrompt = !hasPrompt;
+    setupHealth.push({
+      merchantId: m.id,
+      name: (m as { name: string }).name,
+      slug: (m as { slug: string }).slug,
+      missingProducts,
+      noPaymentAccount,
+      noAiPrompt,
+      incompleteSetup: missingProducts || noPaymentAccount || noAiPrompt,
+    });
+  }
+  return setupHealth;
 }
 
 export interface MerchantExpandedRow {
@@ -184,9 +305,17 @@ export interface MerchantExpandedRow {
   recent_activity_at: string | null;
 }
 
-export async function getMerchantsExpandedList(supabase: SupabaseClient): Promise<MerchantExpandedRow[]> {
+const DEFAULT_MERCHANTS_LIMIT = 50;
+const MAX_MERCHANTS_LIMIT = 100;
+
+export async function getMerchantsExpandedList(
+  supabase: SupabaseClient,
+  opts: { limit?: number; offset?: number } = {}
+): Promise<MerchantExpandedRow[]> {
+  const limit = Math.min(opts.limit ?? DEFAULT_MERCHANTS_LIMIT, MAX_MERCHANTS_LIMIT);
+  const offset = opts.offset ?? 0;
   const [merchants, plans, productCounts, paymentCounts, settings, pages, membersWithEmail, auditMax] = await Promise.all([
-    supabase.from('merchants').select('id, name, slug, billing_status, created_at').order('created_at', { ascending: false }),
+    supabase.from('merchants').select('id, name, slug, billing_status, created_at').order('created_at', { ascending: false }).range(offset, offset + limit - 1),
     supabase.from('merchant_plans').select('merchant_id, plan_code, monthly_price_usd, next_billing_at, last_paid_at'),
     supabase.from('products').select('merchant_id').then((r) => (r.data ?? []).reduce((acc: Record<string, number>, row: { merchant_id: string }) => {
       acc[row.merchant_id] = (acc[row.merchant_id] ?? 0) + 1;

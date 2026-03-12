@@ -35,7 +35,9 @@ app.get('/dashboard', async (c) => {
 
 app.get('/merchants', async (c) => {
   const supabase = getSupabaseAdmin(c.env);
-  const list = await superDashboard.getMerchantsExpandedList(supabase);
+  const limit = c.req.query('limit') ? parseInt(c.req.query('limit'), 10) : undefined;
+  const offset = c.req.query('offset') ? parseInt(c.req.query('offset'), 10) : undefined;
+  const list = await superDashboard.getMerchantsExpandedList(supabase, { limit, offset });
   return c.json({ merchants: list });
 });
 
