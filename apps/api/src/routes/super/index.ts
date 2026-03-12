@@ -45,9 +45,15 @@ app.get('/dashboard', async (c) => {
 
 app.get('/merchants', async (c) => {
   const supabase = getSupabaseAdmin(c.env)
-  const limit = c.req.query('limit') ? parseInt(c.req.query('limit'), 10) : undefined
-  const offset = c.req.query('offset') ? parseInt(c.req.query('offset'), 10) : undefined
-  const list = await superDashboard.getMerchantsExpandedList(supabase, { limit, offset })
+  const limitParam = c.req.query('limit')
+  const offsetParam = c.req.query('offset')
+  const limit = limitParam != null ? parseInt(limitParam, 10) : undefined
+  const offset = offsetParam != null ? parseInt(offsetParam, 10) : undefined
+  const opts: { limit?: number; offset?: number } = {
+    ...(limit != null && !isNaN(limit) && { limit }),
+    ...(offset != null && !isNaN(offset) && { offset }),
+  }
+  const list = await superDashboard.getMerchantsExpandedList(supabase, opts)
   return c.json({ merchants: list })
 })
 

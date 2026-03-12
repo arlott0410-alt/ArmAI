@@ -26,14 +26,17 @@ const app = new Hono<{
 app.get('/', async (c) => {
   const supabase = getSupabaseAdmin(c.env)
   const merchantId = c.get('merchantId')
+  if (!merchantId) return c.json({ error: 'Merchant not found' }, 404)
   const status = c.req.query('status')
   const fulfillment_status = c.req.query('fulfillment_status')
   const payment_method = c.req.query('payment_method')
-  const limit = c.req.query('limit') ? parseInt(c.req.query('limit'), 10) : undefined
-  const offset = c.req.query('offset') ? parseInt(c.req.query('offset'), 10) : undefined
+  const limitStr = c.req.query('limit')
+  const offsetStr = c.req.query('offset')
+  const limit = limitStr != null ? parseInt(limitStr, 10) : undefined
+  const offset = offsetStr != null ? parseInt(offsetStr, 10) : undefined
   let list = await orderService.listOrders(supabase, merchantId, {
-    status,
-    fulfillment_status,
+    ...(status != null && status !== '' && { status }),
+    ...(fulfillment_status != null && fulfillment_status !== '' && { fulfillment_status }),
     limit,
     offset,
   })

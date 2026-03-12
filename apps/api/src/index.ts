@@ -2,10 +2,19 @@ import { Hono } from 'hono'
 import type { Env } from './env.js'
 import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
+import { rateLimiter } from 'hono-rate-limiter'
+import { structuredLog } from './lib/logger.js'
 
 function correlationId(): string {
   return crypto.randomUUID()
 }
+
+const subscribeOnboardLimiter = rateLimiter({
+  windowMs: 60_000,
+  limit: 10,
+  keyGenerator: (c) => c.req.header('cf-connecting-ip') ?? c.req.header('x-forwarded-for') ?? 'ip',
+  message: { error: 'Too many requests. Try again in a minute.' },
+})
 
 import health from './routes/health.js'
 import auth from './routes/auth.js'
@@ -32,6 +41,8 @@ app.use('*', async (c, next) => {
   c.set('correlationId', id)
   await next()
 })
+app.use('/api/subscribe*', subscribeOnboardLimiter)
+app.use('/api/onboard*', subscribeOnboardLimiter)
 app.use(
   '*',
   cors({
@@ -75,6 +86,10 @@ app.notFound((c) => c.json({ error: 'Not Found' }, 404))
 app.onError((err, c) => {
   try {
     const correlationId = c.get('correlationId') as string | undefined
+    structuredLog('error', err.message ?? 'Internal Server Error', {
+      correlationId,
+      path: c.req.path,
+    })
     return c.json({ error: err.message ?? 'Internal Server Error', correlationId }, 500)
   } catch {
     return c.json({ error: err.message ?? 'Internal Server Error' }, 500)

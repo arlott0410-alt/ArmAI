@@ -20,6 +20,7 @@ app.post('/stripe', async (c) => {
   if (!sig) return c.json({ error: 'Missing stripe-signature' }, 400)
 
   try {
+    // @ts-expect-error stripe is optional at runtime (dynamic import)
     const stripeMod = await import('stripe').catch(() => null)
     const Stripe = stripeMod?.default
     if (!Stripe) return c.json({ error: 'Stripe SDK not installed' }, 501)

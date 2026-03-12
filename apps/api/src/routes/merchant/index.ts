@@ -240,7 +240,7 @@ app.put('/subscription-payments/:paymentId/slip', async (c) => {
   if ((payment as { status: string }).status !== 'pending') {
     return c.json({ error: 'Payment is not pending' }, 400)
   }
-  const body = await c.req.parseBody().catch(() => ({}))
+  const body = (await c.req.parseBody().catch(() => ({}))) as Record<string, string | File>
   const file = body['slip'] ?? body['file']
   if (!file || typeof file === 'string') {
     return c.json({ error: 'Missing slip file' }, 400)

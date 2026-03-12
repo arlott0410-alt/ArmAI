@@ -128,7 +128,6 @@ export async function startTrial(
     next_billing_at: trialEnd.toISOString(),
     current_period_end: trialEnd.toISOString(),
     currency: 'LAK',
-    updated_at: now.toISOString(),
   })
   return { ok: true }
 }

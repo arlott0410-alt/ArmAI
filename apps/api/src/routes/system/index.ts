@@ -2,14 +2,17 @@ import { Hono } from 'hono'
 import type { Env } from '../../env.js'
 import { authMiddleware, requireSuperAdmin } from '../../middleware/auth.js'
 import { getSupabaseAdmin } from '../../lib/supabase.js'
+import { getCachedResponse, setCachedResponse, cacheControlHeaders } from '../../lib/cache.js'
+import { logRequest } from '../../lib/logger.js'
 import { z } from 'zod'
 
 const app = new Hono<{
   Bindings: Env
-  Variables: { auth: import('../../middleware/auth.js').AuthContext }
+  Variables: { auth: import('../../middleware/auth.js').AuthContext; correlationId?: string }
 }>()
 
 const BANK_SETTINGS_KEY = 'subscription_bank'
+const KV_SETTINGS_KEY = 'settings:subscription_bank'
 
 const bankSettingsSchema = z.object({
   bank_name: z.string().min(1).max(200),
@@ -22,8 +25,51 @@ const patchBodySchema = z.object({
   bank: bankSettingsSchema.optional(),
 })
 
-/** GET /api/system/settings — public read for bank details (pricing modal). */
+function normalizeBank(value: Record<string, unknown> | null) {
+  if (!value || typeof value !== 'object' || !('bank_name' in value)) return null
+  return {
+    bank_name: (value as { bank_name?: string }).bank_name ?? '',
+    account_number: (value as { account_number?: string }).account_number ?? '',
+    account_holder: (value as { account_holder?: string }).account_holder ?? '',
+    qr_image_url: (value as { qr_image_url?: string | null }).qr_image_url ?? null,
+  }
+}
+
+/** GET /api/system/settings — public read for bank details. Cached (Cache API + KV). */
 app.get('/settings', async (c) => {
+  const url = c.req.url
+  logRequest('/api/system/settings', c.get('correlationId') as string | undefined, {
+    method: 'GET',
+  })
+
+  const cached = await getCachedResponse(url)
+  if (cached) {
+    return new Response(cached.body, {
+      status: cached.status,
+      headers: { ...Object.fromEntries(cached.headers), ...cacheControlHeaders() },
+    })
+  }
+
+  const kv = c.env.SETTINGS_KV
+  if (kv) {
+    try {
+      const raw = await kv.get(KV_SETTINGS_KEY)
+      if (raw != null) {
+        const value = JSON.parse(raw) as Record<string, unknown>
+        const bank = normalizeBank(value)
+        const body = { bank }
+        const res = c.json(body)
+        const headers = new Headers(res.headers)
+        Object.entries(cacheControlHeaders()).forEach(([k, v]) => headers.set(k, v))
+        const response = new Response(res.body, { status: res.status, headers })
+        await setCachedResponse(url, response.clone())
+        return response
+      }
+    } catch {
+      // fallback to Supabase
+    }
+  }
+
   const supabase = getSupabaseAdmin(c.env)
   const { data: row, error } = await supabase
     .from('system_settings')
@@ -32,21 +78,27 @@ app.get('/settings', async (c) => {
     .maybeSingle()
   if (error) return c.json({ error: error.message }, 500)
   const value = (row?.value as Record<string, unknown>) ?? null
-  return c.json({
-    bank:
-      value && typeof value === 'object' && 'bank_name' in value
-        ? {
-            bank_name: (value as { bank_name?: string }).bank_name ?? '',
-            account_number: (value as { account_number?: string }).account_number ?? '',
-            account_holder: (value as { account_holder?: string }).account_holder ?? '',
-            qr_image_url: (value as { qr_image_url?: string | null }).qr_image_url ?? null,
-          }
-        : null,
-  })
+  const bank = normalizeBank(value)
+  if (kv && value) {
+    try {
+      await kv.put(KV_SETTINGS_KEY, JSON.stringify(value), { expirationTtl: 86400 * 7 })
+    } catch {
+      // ignore
+    }
+  }
+  const res = c.json({ bank })
+  const headers = new Headers(res.headers)
+  Object.entries(cacheControlHeaders()).forEach(([k, v]) => headers.set(k, v))
+  const response = new Response(res.body, { status: res.status, headers })
+  await setCachedResponse(url, response.clone())
+  return response
 })
 
-/** PATCH /api/system/settings — super_admin only. */
+/** PATCH /api/system/settings — super_admin only. Writes to Supabase + KV. */
 app.patch('/settings', authMiddleware, requireSuperAdmin, async (c) => {
+  logRequest('/api/system/settings', c.get('correlationId') as string | undefined, {
+    method: 'PATCH',
+  })
   const body = await c.req.json().catch(() => ({}))
   const parsed = patchBodySchema.safeParse(body)
   if (!parsed.success) {
@@ -55,20 +107,24 @@ app.patch('/settings', authMiddleware, requireSuperAdmin, async (c) => {
   const supabase = getSupabaseAdmin(c.env)
   const now = new Date().toISOString()
   if (parsed.data.bank) {
-    const { error: upsertError } = await supabase.from('system_settings').upsert(
-      {
-        key: BANK_SETTINGS_KEY,
-        value: {
-          bank_name: parsed.data.bank.bank_name,
-          account_number: parsed.data.bank.account_number,
-          account_holder: parsed.data.bank.account_holder,
-          qr_image_url: parsed.data.bank.qr_image_url ?? null,
-        },
-        updated_at: now,
-      },
-      { onConflict: 'key' }
-    )
+    const value = {
+      bank_name: parsed.data.bank.bank_name,
+      account_number: parsed.data.bank.account_number,
+      account_holder: parsed.data.bank.account_holder,
+      qr_image_url: parsed.data.bank.qr_image_url ?? null,
+    }
+    const { error: upsertError } = await supabase
+      .from('system_settings')
+      .upsert({ key: BANK_SETTINGS_KEY, value, updated_at: now }, { onConflict: 'key' })
     if (upsertError) return c.json({ error: upsertError.message }, 400)
+    const kv = c.env.SETTINGS_KV
+    if (kv) {
+      try {
+        await kv.put(KV_SETTINGS_KEY, JSON.stringify(value), { expirationTtl: 86400 * 7 })
+      } catch {
+        // ignore
+      }
+    }
   }
   return c.json({ ok: true })
 })
@@ -77,7 +133,7 @@ app.patch('/settings', authMiddleware, requireSuperAdmin, async (c) => {
 app.post('/settings/upload-qr', authMiddleware, requireSuperAdmin, async (c) => {
   const bucket = c.env.SLIP_BUCKET
   if (!bucket) return c.json({ error: 'Upload not configured' }, 503)
-  const body = await c.req.parseBody().catch(() => ({}))
+  const body = (await c.req.parseBody().catch(() => ({}))) as Record<string, string | File>
   const file = body['file'] ?? body['qr']
   if (!file || typeof file === 'string') return c.json({ error: 'Missing file' }, 400)
   const f = file as File

@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import type { Env } from '../env.js'
 import { authMiddleware, resolveMerchant, requireMerchantAdmin } from '../middleware/auth.js'
 import { getSupabaseAdmin } from '../lib/supabase.js'
+import { structuredLog } from '../lib/logger.js'
 import { createCheckout } from '../services/subscription.js'
 import { z } from 'zod'
 
@@ -33,6 +34,7 @@ const subscribeBodySchema = z.object({
 })
 
 app.post('/', async (c) => {
+  structuredLog('info', 'subscribe', { path: '/api/subscribe' })
   const body = await c.req.json().catch(() => ({}))
   const parsed = subscribeBodySchema.safeParse(body)
   if (!parsed.success) {
@@ -43,7 +45,7 @@ app.post('/', async (c) => {
   const merchantId = c.get('merchantId')
   const supabase = getSupabaseAdmin(c.env)
   const base = c.req.url.replace(/\/subscribe\/?.*$/, '')
-  const result = await createCheckout(supabase, c.env, {
+  const result = await createCheckout(supabase, c.env as unknown as Record<string, unknown>, {
     merchantId,
     planCode: 'standard',
     successUrl: success_url ?? `${base}/pricing`,

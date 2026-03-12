@@ -77,11 +77,12 @@ export async function processTelegramUpdate(
     .select('id')
     .single()
 
+  const insertedId = tm?.id
   if (insertErr || !tm) {
     await supabase
       .from('telegram_messages')
       .update({ processed_status: 'failed', updated_at: new Date().toISOString() })
-      .eq('id', tm?.id ?? '')
+      .eq('id', insertedId ?? '')
     return { processed: false }
   }
 
@@ -109,7 +110,7 @@ export async function processTelegramUpdate(
         caption,
         telegramUserId: telegramUserId ?? undefined,
       })
-      if (result.status === 'needs_manual_link') {
+      if (result.status === 'awaiting_order_reference') {
         const sent = await telegram.sendTelegramText(
           p.connection.bot_token_encrypted_or_bound_reference!,
           chatId,

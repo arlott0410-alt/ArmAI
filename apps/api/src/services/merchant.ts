@@ -15,7 +15,7 @@ export type CreateMerchantInput = ReturnType<typeof createMerchantBodySchema.par
 export async function createMerchant(
   supabase: SupabaseClient,
   input: CreateMerchantInput
-): Promise<{ merchantId: string; userId: string }> {
+): Promise<{ merchantId: string }> {
   const parsed = createMerchantBodySchema.parse(input)
   const defaultCountry = parsed.default_country ?? DEFAULT_COUNTRY
   const defaultCurrency = getMerchantDefaultCurrency(parsed.default_currency, defaultCountry)

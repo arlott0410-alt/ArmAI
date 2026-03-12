@@ -94,15 +94,16 @@ export async function getMerchantReadiness(
     .rpc('merchant_readiness_counts', { p_merchant_id: merchantId })
     .single()
   if (error) throw new Error(error.message)
-  const productCount = (data?.product_count as number) ?? 0
-  const categoryCount = (data?.category_count as number) ?? 0
-  const paymentCount = (data?.active_payment_account_count as number) ?? 0
-  const hasPrimary = Boolean(data?.has_primary_payment_account)
-  const hasPrompt = Boolean(data?.has_ai_prompt)
-  const hasBankParser = Boolean(data?.has_bank_parser)
-  const faqCount = (data?.faq_count as number) ?? 0
-  const knowledgeCount = (data?.knowledge_count as number) ?? 0
-  const pageCount = (data?.connected_facebook_page_count as number) ?? 0
+  const d = data as Record<string, unknown> | null
+  const productCount = (d?.product_count as number) ?? 0
+  const categoryCount = (d?.category_count as number) ?? 0
+  const paymentCount = (d?.active_payment_account_count as number) ?? 0
+  const hasPrimary = Boolean(d?.has_primary_payment_account)
+  const hasPrompt = Boolean(d?.has_ai_prompt)
+  const hasBankParser = Boolean(d?.has_bank_parser)
+  const faqCount = (d?.faq_count as number) ?? 0
+  const knowledgeCount = (d?.knowledge_count as number) ?? 0
+  const pageCount = (d?.connected_facebook_page_count as number) ?? 0
 
   const items: ReadinessItem[] = [
     {

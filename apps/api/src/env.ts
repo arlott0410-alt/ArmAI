@@ -17,6 +17,8 @@ export interface Env {
   /** Optional: verify WhatsApp webhook signature (same as Facebook if same Meta app). */
   WHATSAPP_APP_SECRET?: string
   SLIP_BUCKET: R2Bucket
+  /** KV for system_settings cache (e.g. subscription_bank). Reduces Supabase reads. */
+  SETTINGS_KV?: KVNamespace
   /** Channel media (WhatsApp/Facebook images, documents). Optional; if missing, media_url may be external. */
   CHANNEL_MEDIA_BUCKET?: R2Bucket
   /** Stripe secret key for subscription payments (global cards). Optional; use BCEL OnePay for Laos. */

@@ -5,6 +5,12 @@ name = "armai"
 main = "src/index.ts"
 compatibility_date = "2024-11-01"
 
+# KV for system_settings cache (e.g. subscription_bank). Reduces Supabase reads.
+# Create: wrangler kv:namespace create "ARMAI_SETTINGS" (then set id below)
+[[kv_namespaces]]
+binding = "SETTINGS_KV"
+id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
+
 # R2 bucket for slip images (name must be 3–63 chars, lowercase, numbers, hyphens only)
 # Create a bucket with this name in Dashboard → R2 if it does not exist
 [[r2_buckets]]

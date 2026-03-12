@@ -84,7 +84,7 @@ app.get('/setup', async (c) => {
   const linkedAccountId = config?.payment_account_id ?? null
   const accounts = paymentAccounts.data ?? []
   const linkedAccount = linkedAccountId ? accounts.find((a) => a.id === linkedAccountId) : null
-  const lastReceivedAt = lastTx.data?.[0]?.transaction_at ?? null
+  const lastReceivedAt = (lastTx.data as { transaction_at?: string } | null)?.transaction_at ?? null
   const recentTransactionCount = countResult.count ?? 0
   const scopeRows = scopeCounts.data ?? []
   const scopedCount = scopeRows.filter(

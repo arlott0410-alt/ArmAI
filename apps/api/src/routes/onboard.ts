@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import type { Env } from '../env.js'
 import { authMiddleware } from '../middleware/auth.js'
 import { getSupabaseAdmin } from '../lib/supabase.js'
+import { structuredLog } from '../lib/logger.js'
 import { getMerchantDefaultCurrency, DEFAULT_COUNTRY } from '@armai/shared'
 
 const app = new Hono<{
@@ -17,6 +18,7 @@ app.use('/*', authMiddleware)
  * Idempotent: if user already has a merchant, return success with existing merchantId.
  */
 app.post('/merchant', async (c) => {
+  structuredLog('info', 'onboard merchant', { path: '/api/onboard/merchant' })
   const auth = c.get('auth')
   const supabase = getSupabaseAdmin(c.env)
   const userId = auth.userId
