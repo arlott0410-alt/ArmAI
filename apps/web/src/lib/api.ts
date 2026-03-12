@@ -194,6 +194,22 @@ export interface BankSyncBankOption {
   supported: boolean;
 }
 
+/** Merchant-facing connection health for status chip and overview. */
+export type BankSyncHealthStatus =
+  | 'needs_setup'
+  | 'partially_configured'
+  | 'ready_for_test'
+  | 'healthy'
+  | 'needs_attention';
+
+/** Wizard state for UI flow. */
+export type BankSyncWizardState =
+  | 'not_started'
+  | 'partially_configured'
+  | 'configured'
+  | 'tested'
+  | 'healthy';
+
 export interface BankSyncSetupSummary {
   merchant_id: string;
   bank_code: string | null;
@@ -210,6 +226,11 @@ export interface BankSyncSetupSummary {
   recent_transaction_count: number;
   token_set: boolean;
   bank_options: BankSyncBankOption[];
+  health_status?: BankSyncHealthStatus;
+  step1_complete?: boolean;
+  step2_ready?: boolean;
+  step3_ready?: boolean;
+  wizard_state?: BankSyncWizardState;
 }
 
 export interface BankSyncUpdatePayload {
@@ -225,7 +246,13 @@ export interface BankSyncTestResult {
   status: 'ok' | 'missing_setup' | 'missing_token' | 'missing_payment_account' | 'parse_failed' | 'unsupported_bank';
   message: string;
   parser_ready: boolean;
-  parsed_preview?: { amount: number; sender_name: string | null; reference_code: string | null };
+  config_status?: 'ok' | 'missing' | 'incomplete';
+  parser_status?: 'ok' | 'missing' | 'unsupported';
+  payment_account_status?: 'ok' | 'missing' | 'optional';
+  token_status?: 'ok' | 'missing';
+  test_parse_status?: 'ok' | 'failed' | 'skipped';
+  parsed_preview?: { amount: number; sender_name: string | null; reference_code: string | null } | null;
+  messages?: string[];
   last_tested_at: string;
 }
 
@@ -269,6 +296,17 @@ export const bankSyncSetupApi = {
   regenerateToken: (token: string) =>
     request<BankSyncTokenRegenerateResponse>('/merchant/bank-sync/token/regenerate', { method: 'POST', token }),
   testConnection: (token: string) =>
+    request<BankSyncTestResult>('/merchant/bank-sync/test', { method: 'POST', token }),
+};
+
+/** Typed bank sync wizard API (aliases for clarity). */
+export const bankSyncWizardApi = {
+  getBankSyncSummary: (token: string) => request<BankSyncSetupSummary>('/merchant/bank-sync/setup', { token }),
+  updateBankSyncConfig: (token: string, body: BankSyncUpdatePayload) =>
+    request<{ ok: boolean }>('/merchant/bank-sync/setup', { method: 'PATCH', token, body }),
+  regenerateBankSyncToken: (token: string) =>
+    request<BankSyncTokenRegenerateResponse>('/merchant/bank-sync/token/regenerate', { method: 'POST', token }),
+  testBankSyncConnection: (token: string) =>
     request<BankSyncTestResult>('/merchant/bank-sync/test', { method: 'POST', token }),
 };
 

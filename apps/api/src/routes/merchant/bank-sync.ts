@@ -93,6 +93,31 @@ app.get('/setup', async (c) => {
       }
     : null;
 
+  const step1Complete = !!(bankCode && parserId);
+  const step2Ready = step1Complete && hasToken;
+  const step3Ready = step2Ready;
+  const healthStatus = computeHealthStatus({
+    bankCode,
+    hasToken,
+    hasPaymentAccount: !!linkedAccountId,
+    isActive,
+    parserId,
+    lastTestedAt: config?.last_tested_at ?? null,
+    lastReceivedAt,
+  });
+
+  const wizardState = healthStatus === 'healthy'
+    ? 'healthy'
+    : healthStatus === 'needs_setup'
+      ? 'not_started'
+      : step3Ready
+        ? 'tested'
+        : step2Ready
+          ? 'configured'
+          : step1Complete
+            ? 'partially_configured'
+            : 'not_started';
+
   return c.json({
     merchant_id: merchantId,
     bank_code: bankCode,
@@ -109,8 +134,30 @@ app.get('/setup', async (c) => {
     recent_transaction_count: recentTransactionCount,
     token_set: hasToken,
     bank_options: listBankOptions(),
+    health_status: healthStatus,
+    step1_complete: step1Complete,
+    step2_ready: step2Ready,
+    step3_ready: step3Ready,
+    wizard_state: wizardState,
   });
 });
+
+function computeHealthStatus(p: {
+  bankCode: string | null;
+  hasToken: boolean;
+  hasPaymentAccount: boolean;
+  isActive: boolean;
+  parserId: string | null;
+  lastTestedAt: string | null;
+  lastReceivedAt: string | null;
+}): 'needs_setup' | 'partially_configured' | 'ready_for_test' | 'healthy' | 'needs_attention' {
+  if (!p.bankCode && !p.parserId) return 'needs_setup';
+  if (!p.hasToken) return p.parserId ? 'partially_configured' : 'needs_setup';
+  if (!p.isActive && p.hasToken && p.parserId) return 'ready_for_test';
+  if (!p.hasPaymentAccount && p.lastReceivedAt) return 'needs_attention';
+  if (p.parserId && p.hasToken && p.isActive) return 'healthy';
+  return 'partially_configured';
+}
 
 /** PATCH /merchant/bank-sync/setup — save bank sync configuration. */
 app.patch('/setup', async (c) => {
@@ -203,26 +250,43 @@ app.post('/test', async (c) => {
   const hasPaymentAccount = !!configRow.data?.payment_account_id;
   const hasToken = await hasWebhookToken(supabase, merchantId);
 
+  const messages: string[] = [];
   const result: {
     success: boolean;
     status: 'ok' | 'missing_setup' | 'missing_token' | 'missing_payment_account' | 'parse_failed' | 'unsupported_bank';
     message: string;
     parser_ready: boolean;
-    parsed_preview?: { amount: number; sender_name: string | null; reference_code: string | null };
+    config_status: 'ok' | 'missing' | 'incomplete';
+    parser_status: 'ok' | 'missing' | 'unsupported';
+    payment_account_status: 'ok' | 'missing' | 'optional';
+    token_status: 'ok' | 'missing';
+    test_parse_status: 'ok' | 'failed' | 'skipped';
+    parsed_preview: { amount: number; sender_name: string | null; reference_code: string | null } | null;
+    messages: string[];
     last_tested_at: string;
   } = {
     success: false,
     status: 'ok',
     message: '',
     parser_ready: false,
+    config_status: 'ok',
+    parser_status: 'ok',
+    payment_account_status: hasPaymentAccount ? 'ok' : 'optional',
+    token_status: hasToken ? 'ok' : 'missing',
+    test_parse_status: 'skipped',
+    parsed_preview: null,
+    messages: [],
     last_tested_at: new Date().toISOString(),
   };
 
   if (!parserId) {
     result.status = 'missing_setup';
     result.message = 'Bank sync is not configured. Select a bank and save.';
+    result.config_status = 'missing';
+    result.parser_status = 'missing';
+    result.messages = ['Select a bank in Step 1 and save your configuration.'];
     await updateLastTested(supabase, merchantId);
-    return c.json(result);
+    return c.json({ ...result, messages: result.messages });
   }
 
   const opt = getBankOption(bankCode);
@@ -230,18 +294,24 @@ app.post('/test', async (c) => {
     result.status = 'unsupported_bank';
     result.message = `"${opt.label}" uses generic parser. Bank-specific parsing may be added later.`;
     result.parser_ready = true;
+    result.parser_status = 'unsupported';
+    result.messages.push(`"${opt.label}" uses generic parser.`);
   }
 
   if (!hasToken) {
     result.status = 'missing_token';
     result.message = 'Webhook verification token is not set. Generate or enter a token.';
+    result.token_status = 'missing';
+    result.messages = ['Generate or paste a verification token in Step 2.', 'Then paste it into your Android notification app.'];
     await updateLastTested(supabase, merchantId);
-    return c.json(result);
+    return c.json({ ...result, messages: result.messages });
   }
 
   if (!hasPaymentAccount) {
-    result.status = 'missing_payment_account';
-    result.message = 'No payment account linked. Link a payment account for better matching.';
+    result.payment_account_status = 'optional';
+    result.messages.push('Link a payment account in Step 1 for better matching.');
+  } else {
+    result.messages.push('Payment account linked.');
   }
 
   try {
@@ -254,6 +324,7 @@ app.post('/test', async (c) => {
     };
     const normalized = parseBankPayload(parserId, samplePayload);
     result.parser_ready = true;
+    result.test_parse_status = 'ok';
     result.parsed_preview = {
       amount: normalized.amount,
       sender_name: normalized.sender_name,
@@ -262,9 +333,13 @@ app.post('/test', async (c) => {
     result.success = true;
     result.status = 'ok';
     result.message = 'Configuration valid. Parser test passed (sample payload). Update your Android app with the webhook URL and token.';
+    result.messages.push('Parser test passed with sample payload.');
+    result.messages.push('Connection is ready. Use the webhook URL and token in your Android app.');
   } catch (e) {
     result.status = 'parse_failed';
     result.message = e instanceof Error ? e.message : 'Parser test failed.';
+    result.test_parse_status = 'failed';
+    result.messages.push(result.message);
   }
 
   await updateLastTested(supabase, merchantId);
