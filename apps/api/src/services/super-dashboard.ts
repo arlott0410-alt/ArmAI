@@ -249,23 +249,19 @@ async function getBillingHealthFromPlans(supabase: SupabaseClient): Promise<Merc
 }
 
 async function getSetupHealthFromMerchants(supabase: SupabaseClient): Promise<SetupHealthItem[]> {
-  const [merchants, productCounts, paymentCounts, settings] = await Promise.all([
+  const [merchants, products, accounts, prompts] = await Promise.all([
     supabase.from('merchants').select('id, name, slug'),
-    supabase.from('products').select('merchant_id').then((r) => (r.data ?? []).reduce((acc: Record<string, number>, row: { merchant_id: string }) => {
-      acc[row.merchant_id] = (acc[row.merchant_id] ?? 0) + 1;
-      return acc;
-    }, {})),
-    supabase.from('merchant_payment_accounts').select('merchant_id').then((r) => (r.data ?? []).reduce((acc: Record<string, number>, row: { merchant_id: string }) => {
-      acc[row.merchant_id] = (acc[row.merchant_id] ?? 0) + 1;
-      return acc;
-    }, {})),
-    supabase.from('merchant_settings').select('merchant_id, ai_system_prompt').then((r) => {
-      const map: Record<string, boolean> = {};
-      (r.data ?? []).forEach((row: { merchant_id: string; ai_system_prompt: string | null }) => { map[row.merchant_id] = !!(row.ai_system_prompt?.trim()); });
-      return map;
-    }),
+    supabase.from('v_products_count_by_merchant').select('merchant_id, product_count'),
+    supabase.from('v_payment_accounts_count_by_merchant').select('merchant_id, payment_account_count'),
+    supabase.from('v_has_ai_prompt_by_merchant').select('merchant_id, has_prompt'),
   ]);
   const merchantList = merchants.data ?? [];
+  const productCounts: Record<string, number> = {};
+  (products.data ?? []).forEach((r: { merchant_id: string; product_count: number }) => { productCounts[r.merchant_id] = r.product_count ?? 0; });
+  const paymentCounts: Record<string, number> = {};
+  (accounts.data ?? []).forEach((r: { merchant_id: string; payment_account_count: number }) => { paymentCounts[r.merchant_id] = r.payment_account_count ?? 0; });
+  const settings: Record<string, boolean> = {};
+  (prompts.data ?? []).forEach((r: { merchant_id: string; has_prompt: boolean }) => { settings[r.merchant_id] = Boolean(r.has_prompt); });
   const setupHealth: SetupHealthItem[] = [];
   for (const m of merchantList) {
     const productCount = productCounts[m.id] ?? 0;
@@ -317,21 +313,21 @@ export async function getMerchantsExpandedList(
   const [merchants, plans, productCounts, paymentCounts, settings, pages, membersWithEmail, auditMax] = await Promise.all([
     supabase.from('merchants').select('id, name, slug, billing_status, created_at').order('created_at', { ascending: false }).range(offset, offset + limit - 1),
     supabase.from('merchant_plans').select('merchant_id, plan_code, monthly_price_usd, next_billing_at, last_paid_at'),
-    supabase.from('products').select('merchant_id').then((r) => (r.data ?? []).reduce((acc: Record<string, number>, row: { merchant_id: string }) => {
-      acc[row.merchant_id] = (acc[row.merchant_id] ?? 0) + 1;
+    supabase.from('v_products_count_by_merchant').select('merchant_id, product_count').then((r) => (r.data ?? []).reduce((acc: Record<string, number>, row: { merchant_id: string; product_count: number }) => {
+      acc[row.merchant_id] = row.product_count ?? 0;
       return acc;
     }, {})),
-    supabase.from('merchant_payment_accounts').select('merchant_id').then((r) => (r.data ?? []).reduce((acc: Record<string, number>, row: { merchant_id: string }) => {
-      acc[row.merchant_id] = (acc[row.merchant_id] ?? 0) + 1;
+    supabase.from('v_payment_accounts_count_by_merchant').select('merchant_id, payment_account_count').then((r) => (r.data ?? []).reduce((acc: Record<string, number>, row: { merchant_id: string; payment_account_count: number }) => {
+      acc[row.merchant_id] = row.payment_account_count ?? 0;
       return acc;
     }, {})),
-    supabase.from('merchant_settings').select('merchant_id, ai_system_prompt').then((r) => {
+    supabase.from('v_has_ai_prompt_by_merchant').select('merchant_id, has_prompt').then((r) => {
       const map: Record<string, boolean> = {};
-      (r.data ?? []).forEach((row: { merchant_id: string; ai_system_prompt: string | null }) => { map[row.merchant_id] = !!(row.ai_system_prompt?.trim()); });
+      (r.data ?? []).forEach((row: { merchant_id: string; has_prompt: boolean }) => { map[row.merchant_id] = Boolean(row.has_prompt); });
       return map;
     }),
-    supabase.from('facebook_pages').select('merchant_id').then((r) => (r.data ?? []).reduce((acc: Record<string, number>, row: { merchant_id: string }) => {
-      acc[row.merchant_id] = (acc[row.merchant_id] ?? 0) + 1;
+    supabase.from('v_facebook_pages_count_by_merchant').select('merchant_id, connected_page_count').then((r) => (r.data ?? []).reduce((acc: Record<string, number>, row: { merchant_id: string; connected_page_count: number }) => {
+      acc[row.merchant_id] = row.connected_page_count ?? 0;
       return acc;
     }, {})),
     supabase.from('merchant_members').select('merchant_id, user_id'),

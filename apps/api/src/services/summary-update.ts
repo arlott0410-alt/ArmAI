@@ -12,57 +12,9 @@ const TODAY_START_ISO = () => {
  * Called from event hooks (order paid, matching, shipment, etc.) and as fallback when summary missing.
  */
 export async function refreshMerchantSummary(supabase: SupabaseClient, merchantId: string): Promise<void> {
-  const todayStart = TODAY_START_ISO();
-
-  const [
-    ordersRes,
-    matchingRes,
-    readyToShipRes,
-    productCountRes,
-    paymentCountRes,
-    settingsRes,
-  ] = await Promise.all([
-    supabase.from('orders').select('id, status, created_at').eq('merchant_id', merchantId).gte('created_at', todayStart),
-    supabase.from('matching_results').select('id, status').eq('merchant_id', merchantId),
-    supabase.from('orders').select('id', { count: 'exact', head: true }).eq('merchant_id', merchantId).in('payment_status', ['paid', 'cod_collected']).eq('fulfillment_status', 'pending_fulfillment'),
-    supabase.from('products').select('id', { count: 'exact', head: true }).eq('merchant_id', merchantId).eq('status', 'active'),
-    supabase.from('merchant_payment_accounts').select('id', { count: 'exact', head: true }).eq('merchant_id', merchantId).eq('is_active', true),
-    supabase.from('merchant_settings').select('ai_system_prompt').eq('merchant_id', merchantId).maybeSingle(),
-  ]);
-
-  const ordersToday = (ordersRes.data ?? []).length;
-  const paidToday = (ordersRes.data ?? []).filter((o: { status: string }) => o.status === 'paid').length;
-
-  const matchList = matchingRes.data ?? [];
-  const manualReviewCount = matchList.filter((m: { status: string }) => m.status === 'manual_review').length;
-  const probableMatchCount = matchList.filter((m: { status: string }) => m.status === 'probable_match').length;
-
-  const pendingPaymentRes = await supabase.from('orders').select('id', { count: 'exact', head: true }).eq('merchant_id', merchantId).in('status', ['pending', 'slip_uploaded', 'bank_pending_match']);
-  const pendingPaymentCount = (pendingPaymentRes.count as number) ?? 0;
-  const readyToShipCount = (readyToShipRes.count as number) ?? 0;
-  const activeProductsCount = (productCountRes.count as number) ?? 0;
-  const activePaymentAccountsCount = (paymentCountRes.count as number) ?? 0;
-
-  const hasPrompt = !!(settingsRes.data?.ai_system_prompt?.trim());
-  const readinessScore = activeProductsCount > 0 && activePaymentAccountsCount > 0 && hasPrompt ? 100 : activeProductsCount > 0 || activePaymentAccountsCount > 0 || hasPrompt ? 50 : 0;
-
-  const now = new Date().toISOString();
-  await supabase.from('merchant_dashboard_summaries').upsert(
-    {
-      merchant_id: merchantId,
-      orders_today: ordersToday,
-      pending_payment_count: pendingPaymentCount,
-      paid_today_count: paidToday,
-      manual_review_count: manualReviewCount,
-      probable_match_count: probableMatchCount,
-      ready_to_ship_count: readyToShipCount,
-      active_products_count: activeProductsCount,
-      active_payment_accounts_count: activePaymentAccountsCount,
-      readiness_score: readinessScore,
-      updated_at: now,
-    },
-    { onConflict: 'merchant_id' }
-  );
+  // Single RPC to compute and upsert in SQL (cuts fan-out and data transfer).
+  const { error } = await supabase.rpc('refresh_merchant_dashboard_summary', { p_merchant_id: merchantId });
+  if (error) throw new Error(error.message);
 }
 
 /**

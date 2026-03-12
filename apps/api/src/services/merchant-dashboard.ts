@@ -86,26 +86,17 @@ export async function getMerchantReadiness(
   supabase: SupabaseClient,
   merchantId: string
 ): Promise<ReadinessItem[]> {
-  const [products, categories, paymentAccounts, primaryAccount, settings, faqs, knowledge, pages] = await Promise.all([
-    supabase.from('products').select('id', { count: 'exact', head: true }).eq('merchant_id', merchantId),
-    supabase.from('product_categories').select('id', { count: 'exact', head: true }).eq('merchant_id', merchantId),
-    supabase.from('merchant_payment_accounts').select('id', { count: 'exact', head: true }).eq('merchant_id', merchantId).eq('is_active', true),
-    supabase.from('merchant_payment_accounts').select('id').eq('merchant_id', merchantId).eq('is_primary', true).maybeSingle(),
-    supabase.from('merchant_settings').select('ai_system_prompt, bank_parser_id').eq('merchant_id', merchantId).single(),
-    supabase.from('merchant_faqs').select('id', { count: 'exact', head: true }).eq('merchant_id', merchantId),
-    supabase.from('merchant_knowledge_entries').select('id', { count: 'exact', head: true }).eq('merchant_id', merchantId),
-    supabase.from('facebook_pages').select('id', { count: 'exact', head: true }).eq('merchant_id', merchantId),
-  ]);
-
-  const productCount = (products.count as number) ?? 0;
-  const categoryCount = (categories.count as number) ?? 0;
-  const paymentCount = (paymentAccounts.count as number) ?? 0;
-  const hasPrimary = !!primaryAccount.data;
-  const hasPrompt = !!(settings.data?.ai_system_prompt?.trim());
-  const hasBankParser = !!settings.data?.bank_parser_id;
-  const faqCount = (faqs.count as number) ?? 0;
-  const knowledgeCount = (knowledge.count as number) ?? 0;
-  const pageCount = (pages.count as number) ?? 0;
+  const { data, error } = await supabase.rpc('merchant_readiness_counts', { p_merchant_id: merchantId }).single();
+  if (error) throw new Error(error.message);
+  const productCount = (data?.product_count as number) ?? 0;
+  const categoryCount = (data?.category_count as number) ?? 0;
+  const paymentCount = (data?.active_payment_account_count as number) ?? 0;
+  const hasPrimary = Boolean(data?.has_primary_payment_account);
+  const hasPrompt = Boolean(data?.has_ai_prompt);
+  const hasBankParser = Boolean(data?.has_bank_parser);
+  const faqCount = (data?.faq_count as number) ?? 0;
+  const knowledgeCount = (data?.knowledge_count as number) ?? 0;
+  const pageCount = (data?.connected_facebook_page_count as number) ?? 0;
 
   const items: ReadinessItem[] = [
     { key: 'products', label: 'Products', status: productCount > 0 ? 'ready' : 'not_started', detail: productCount > 0 ? `${productCount} products` : undefined },

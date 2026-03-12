@@ -4,9 +4,11 @@ import { useAuth } from '../../contexts/AuthContext';
 import { merchantApi, type MerchantDashboardResponse } from '../../lib/api';
 import { PageShell, StatCard, Card, CardBody, Section, EmptyState, StatusBadge, PanelCard } from '../../components/ui';
 import { theme } from '../../theme';
+import { useI18n } from '../../i18n/I18nProvider';
 
 export default function MerchantDashboard() {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [data, setData] = useState<MerchantDashboardResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const token = user?.accessToken ?? null;
@@ -26,30 +28,30 @@ export default function MerchantDashboard() {
   const progressPct = totalSteps > 0 ? Math.round((readyCount / totalSteps) * 100) : 0;
 
   return (
-    <PageShell title="Overview" description="Store Operations Workspace">
+    <PageShell title={t('merchant.overview.title')} description={t('merchant.overview.description')}>
       {summary != null && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 16, marginBottom: 28 }}>
-          <StatCard label="Orders today" value={summary.ordersToday} accent={summary.ordersToday > 0} />
-          <StatCard label="Pending payment" value={summary.pendingPayment} />
-          <StatCard label="Paid today" value={summary.paidToday} />
-          <StatCard label="Manual review" value={summary.manualReviewCount} />
-          <StatCard label="Probable match" value={summary.probableMatchCount} />
-          <StatCard label="Ready to ship" value={summary.readyToShipCount ?? 0} />
-          <StatCard label="Active products" value={summary.activeProductsCount} />
-          <StatCard label="Payment accounts" value={summary.activePaymentAccountsCount} />
+          <StatCard label={t('kpi.ordersToday')} value={summary.ordersToday} accent={summary.ordersToday > 0} />
+          <StatCard label={t('kpi.pendingPayment')} value={summary.pendingPayment} />
+          <StatCard label={t('kpi.paidToday')} value={summary.paidToday} />
+          <StatCard label={t('kpi.manualReview')} value={summary.manualReviewCount} />
+          <StatCard label={t('kpi.probableMatch')} value={summary.probableMatchCount} />
+          <StatCard label={t('kpi.readyToShip')} value={summary.readyToShipCount ?? 0} />
+          <StatCard label={t('kpi.activeProducts')} value={summary.activeProductsCount} />
+          <StatCard label={t('kpi.paymentAccounts')} value={summary.activePaymentAccountsCount} />
         </div>
       )}
 
       <Section
-        title="Setup readiness"
-        description={totalSteps > 0 ? `${readyCount} of ${totalSteps} steps complete` : 'Complete setup to start selling.'}
+        title={t('merchant.setupReadiness.title')}
+        description={totalSteps > 0 ? `${readyCount} / ${totalSteps}` : t('merchant.setupReadiness.subtitle')}
       >
         <PanelCard
           title="Setup checklist"
           subtitle={totalSteps > 0 ? `${progressPct}% complete` : undefined}
         >
           {readiness.length === 0 ? (
-            <EmptyState title="Loading setup status…" />
+            <EmptyState title={t('merchant.setupReadiness.empty')} />
           ) : (
             <>
               <div style={{ marginBottom: 16, height: 6, background: 'rgba(255,255,255,0.08)', borderRadius: 3, overflow: 'hidden' }}>
@@ -73,7 +75,7 @@ export default function MerchantDashboard() {
                         }
                         style={{ marginLeft: 'auto', fontSize: 13, color: theme.primary, fontWeight: 500 }}
                       >
-                        Set up →
+                        {t('action.setUpArrow')}
                       </Link>
                     )}
                   </li>
