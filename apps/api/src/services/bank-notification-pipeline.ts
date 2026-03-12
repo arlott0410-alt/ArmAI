@@ -2,37 +2,37 @@
  * Bank notification processing pipeline: raw intake → parser resolution → parse → normalize → scoping → ingest + match only if scoped.
  * Non-breaking: when scoping is skipped (no linked account), behavior matches legacy (all go to matching).
  */
-import type { SupabaseClient } from '@supabase/supabase-js';
-import type { NormalizedTransaction } from '@armai/shared';
-import type { NormalizedTransactionCandidate } from '@armai/shared';
-import { parseBankPayload } from './bank-webhook.js';
-import { resolveParserProfile } from './parser-resolver.js';
+import type { SupabaseClient } from '@supabase/supabase-js'
+import type { NormalizedTransaction } from '@armai/shared'
+import type { NormalizedTransactionCandidate } from '@armai/shared'
+import { parseBankPayload } from './bank-webhook.js'
+import { resolveParserProfile } from './parser-resolver.js'
 import {
   runAccountScoping,
   loadPaymentAccountForScoping,
   type PaymentAccountRow,
-} from './account-scoping.js';
-import { ingestBankTransaction } from './bank-webhook.js';
-import { runMatchingForBankTransaction } from './matching.js';
-import * as summaryUpdate from './summary-update.js';
+} from './account-scoping.js'
+import { ingestBankTransaction } from './bank-webhook.js'
+import { runMatchingForBankTransaction } from './matching.js'
+import * as summaryUpdate from './summary-update.js'
 
 export interface RawEventMeta {
-  source_app_package?: string | null;
-  source_app_label?: string | null;
-  device_id?: string | null;
-  device_label?: string | null;
-  notification_title?: string | null;
-  notification_subtitle?: string | null;
-  raw_message?: string | null;
-  locale?: string | null;
+  source_app_package?: string | null
+  source_app_label?: string | null
+  device_id?: string | null
+  device_label?: string | null
+  notification_title?: string | null
+  notification_subtitle?: string | null
+  raw_message?: string | null
+  locale?: string | null
 }
 
 export interface PipelineResult {
-  ok: boolean;
-  bankTransactionId: string | null;
-  scopeStatus: string | null;
-  matchingRan: boolean;
-  error?: string;
+  ok: boolean
+  bankTransactionId: string | null
+  scopeStatus: string | null
+  matchingRan: boolean
+  error?: string
 }
 
 function normalizedToCandidate(
@@ -56,7 +56,7 @@ function normalizedToCandidate(
     datetime: n.datetime,
     bank_tx_id: n.bank_tx_id,
     raw_parser_id: n.raw_parser_id,
-  };
+  }
 }
 
 /**
@@ -65,11 +65,11 @@ function normalizedToCandidate(
 async function persistRawEvent(
   supabase: SupabaseClient,
   p: {
-    merchantId: string;
-    bankConnectionId: string | null;
-    rawPayload: Record<string, unknown>;
-    meta: RawEventMeta;
-    processingStatus: string;
+    merchantId: string
+    bankConnectionId: string | null
+    rawPayload: Record<string, unknown>
+    meta: RawEventMeta
+    processingStatus: string
   }
 ): Promise<string | null> {
   const { data, error } = await supabase
@@ -90,9 +90,9 @@ async function persistRawEvent(
       updated_at: new Date().toISOString(),
     })
     .select('id')
-    .single();
-  if (error) return null;
-  return data?.id ?? null;
+    .single()
+  if (error) return null
+  return data?.id ?? null
 }
 
 /**
@@ -106,7 +106,7 @@ async function updateRawEventStatus(
   await supabase
     .from('bank_raw_notification_events')
     .update({ processing_status: status, updated_at: new Date().toISOString() })
-    .eq('id', rawEventId);
+    .eq('id', rawEventId)
 }
 
 /**
@@ -115,16 +115,16 @@ async function updateRawEventStatus(
 async function insertProcessingLog(
   supabase: SupabaseClient,
   p: {
-    merchantId: string;
-    rawEventId: string | null;
-    parserProfileId: string | null;
-    paymentAccountId: string | null;
-    bankTransactionId: string | null;
-    parseStatus: string;
-    scopeStatus: string;
-    matchingEligibility: boolean;
-    decisionReason: string;
-    detailJson: Record<string, unknown> | null;
+    merchantId: string
+    rawEventId: string | null
+    parserProfileId: string | null
+    paymentAccountId: string | null
+    bankTransactionId: string | null
+    parseStatus: string
+    scopeStatus: string
+    matchingEligibility: boolean
+    decisionReason: string
+    detailJson: Record<string, unknown> | null
   }
 ): Promise<void> {
   await supabase.from('bank_transaction_processing_logs').insert({
@@ -138,7 +138,7 @@ async function insertProcessingLog(
     matching_eligibility: p.matchingEligibility,
     decision_reason: p.decisionReason,
     detail_json: p.detailJson,
-  });
+  })
 }
 
 /**
@@ -147,12 +147,12 @@ async function insertProcessingLog(
 export async function processBankNotification(
   supabase: SupabaseClient,
   payload: {
-    merchantId: string;
-    body: Record<string, unknown>;
-    rawEventMeta?: RawEventMeta;
+    merchantId: string
+    body: Record<string, unknown>
+    rawEventMeta?: RawEventMeta
   }
 ): Promise<PipelineResult> {
-  const { merchantId, body, rawEventMeta = {} } = payload;
+  const { merchantId, body, rawEventMeta = {} } = payload
 
   const bankConfig = await supabase
     .from('bank_configs')
@@ -160,12 +160,12 @@ export async function processBankNotification(
     .eq('merchant_id', merchantId)
     .eq('is_active', true)
     .limit(1)
-    .maybeSingle();
+    .maybeSingle()
 
-  const config = bankConfig.data;
-  const bankCode = config?.bank_code ?? null;
-  const paymentAccountId = config?.payment_account_id ?? null;
-  const matchMode = (config?.match_mode as 'strict' | 'relaxed') ?? 'strict';
+  const config = bankConfig.data
+  const bankCode = config?.bank_code ?? null
+  const paymentAccountId = config?.payment_account_id ?? null
+  const matchMode = (config?.match_mode as 'strict' | 'relaxed') ?? 'strict'
 
   const rawEventId = await persistRawEvent(supabase, {
     merchantId,
@@ -173,10 +173,10 @@ export async function processBankNotification(
     rawPayload: body,
     meta: rawEventMeta,
     processingStatus: 'received',
-  });
+  })
 
-  let parserProfileId: string;
-  let normalized: NormalizedTransaction;
+  let parserProfileId: string
+  let normalized: NormalizedTransaction
   try {
     const resolution = await resolveParserProfile(supabase, {
       merchantId,
@@ -184,27 +184,27 @@ export async function processBankNotification(
       sourceAppPackage: rawEventMeta.source_app_package,
       locale: rawEventMeta.locale,
       rawMessage: rawEventMeta.raw_message,
-    });
-    parserProfileId = resolution.parserProfileId;
-    normalized = parseBankPayload(resolution.parserId, body);
+    })
+    parserProfileId = resolution.parserProfileId
+    normalized = parseBankPayload(resolution.parserId, body)
   } catch (e) {
-    if (rawEventId) await updateRawEventStatus(supabase, rawEventId, 'failed');
+    if (rawEventId) await updateRawEventStatus(supabase, rawEventId, 'failed')
     return {
       ok: false,
       bankTransactionId: null,
       scopeStatus: null,
       matchingRan: false,
       error: e instanceof Error ? e.message : 'Parse failed',
-    };
+    }
   }
 
-  if (rawEventId) await updateRawEventStatus(supabase, rawEventId, 'parsed');
+  if (rawEventId) await updateRawEventStatus(supabase, rawEventId, 'parsed')
 
-  const candidate = normalizedToCandidate(normalized, parserProfileId, 1);
+  const candidate = normalizedToCandidate(normalized, parserProfileId, 1)
 
-  let paymentAccount: PaymentAccountRow | null = null;
+  let paymentAccount: PaymentAccountRow | null = null
   if (paymentAccountId) {
-    paymentAccount = await loadPaymentAccountForScoping(supabase, paymentAccountId, merchantId);
+    paymentAccount = await loadPaymentAccountForScoping(supabase, paymentAccountId, merchantId)
   }
 
   const scoping = runAccountScoping({
@@ -213,12 +213,16 @@ export async function processBankNotification(
     linkedPaymentAccountId: paymentAccountId,
     matchMode,
     paymentAccount,
-  });
+  })
 
   if (rawEventId) {
     const nextStatus =
-      scoping.scopeStatus === 'scoped' ? 'scoped' : scoping.scopeStatus === 'out_of_scope' ? 'out_of_scope' : 'ambiguous';
-    await updateRawEventStatus(supabase, rawEventId, nextStatus);
+      scoping.scopeStatus === 'scoped'
+        ? 'scoped'
+        : scoping.scopeStatus === 'out_of_scope'
+          ? 'out_of_scope'
+          : 'ambiguous'
+    await updateRawEventStatus(supabase, rawEventId, nextStatus)
   }
 
   await supabase.from('webhook_events').insert({
@@ -227,7 +231,7 @@ export async function processBankNotification(
     external_id: normalized.bank_tx_id ?? undefined,
     raw_payload: body,
     processed_at: new Date().toISOString(),
-  });
+  })
 
   const insertPayload: Record<string, unknown> = {
     merchant_id: merchantId,
@@ -245,26 +249,26 @@ export async function processBankNotification(
     ignored_reason: scoping.ignoredReason,
     parser_profile_id: parserProfileId,
     raw_event_id: rawEventId,
-  };
+  }
 
   const { data: txRow, error: txErr } = await supabase
     .from('bank_transactions')
     .insert(insertPayload)
     .select('id')
-    .single();
+    .single()
 
   if (txErr) {
-    if (rawEventId) await updateRawEventStatus(supabase, rawEventId, 'failed');
+    if (rawEventId) await updateRawEventStatus(supabase, rawEventId, 'failed')
     return {
       ok: false,
       bankTransactionId: null,
       scopeStatus: scoping.scopeStatus,
       matchingRan: false,
       error: txErr.message,
-    };
+    }
   }
 
-  const bankTransactionId = txRow!.id;
+  const bankTransactionId = txRow!.id
 
   await insertProcessingLog(supabase, {
     merchantId,
@@ -277,9 +281,9 @@ export async function processBankNotification(
     matchingEligibility: scoping.scopeStatus === 'scoped',
     decisionReason: scoping.decisionReason,
     detailJson: { scopeConfidence: scoping.scopeConfidence, ignoredReason: scoping.ignoredReason },
-  });
+  })
 
-  let matchingRan = false;
+  let matchingRan = false
   if (scoping.scopeStatus === 'scoped') {
     await runMatchingForBankTransaction(supabase, {
       merchantId,
@@ -289,9 +293,9 @@ export async function processBankNotification(
       datetime: normalized.datetime,
       referenceCode: normalized.reference_code,
       detectedAccountNumber: candidate.receiver_account_number ?? undefined,
-    });
-    matchingRan = true;
-    summaryUpdate.refreshMerchantSummary(supabase, merchantId).catch(() => {});
+    })
+    matchingRan = true
+    summaryUpdate.refreshMerchantSummary(supabase, merchantId).catch(() => {})
   }
 
   return {
@@ -299,5 +303,5 @@ export async function processBankNotification(
     bankTransactionId,
     scopeStatus: scoping.scopeStatus,
     matchingRan,
-  };
+  }
 }

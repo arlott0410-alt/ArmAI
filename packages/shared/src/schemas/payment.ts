@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod'
 
 export const merchantPaymentAccountSchema = z.object({
   bank_code: z.string().min(1).max(32),
@@ -12,7 +12,7 @@ export const merchantPaymentAccountSchema = z.object({
   is_active: z.boolean().optional(),
   sort_order: z.number().int().min(0).optional(),
   notes: z.string().max(500).nullable().optional(),
-});
+})
 
 export const merchantPaymentAccountRuleSchema = z.object({
   payment_account_id: z.string().uuid(),
@@ -20,7 +20,7 @@ export const merchantPaymentAccountRuleSchema = z.object({
   rule_value: z.string().max(255).nullable().optional(),
   priority: z.number().int().min(0).optional(),
   is_active: z.boolean().optional(),
-});
+})
 
-export type CreateMerchantPaymentAccountBody = z.infer<typeof merchantPaymentAccountSchema>;
-export type CreateMerchantPaymentAccountRuleBody = z.infer<typeof merchantPaymentAccountRuleSchema>;
+export type CreateMerchantPaymentAccountBody = z.infer<typeof merchantPaymentAccountSchema>
+export type CreateMerchantPaymentAccountRuleBody = z.infer<typeof merchantPaymentAccountRuleSchema>

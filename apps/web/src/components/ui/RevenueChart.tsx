@@ -1,9 +1,9 @@
-import React from 'react';
-import { theme } from '../../theme';
+import React from 'react'
+import { theme } from '../../theme'
 
 export interface RevenueChartPoint {
-  label: string;
-  value: number;
+  label: string
+  value: number
 }
 
 export function RevenueChart({
@@ -12,19 +12,29 @@ export function RevenueChart({
   currency = '$',
   style,
 }: {
-  data: RevenueChartPoint[];
-  height?: number;
-  currency?: string;
-  style?: React.CSSProperties;
+  data: RevenueChartPoint[]
+  height?: number
+  currency?: string
+  style?: React.CSSProperties
 }) {
   if (data.length === 0) {
     return (
-      <div style={{ height, display: 'flex', alignItems: 'center', justifyContent: 'center', color: theme.textMuted, fontSize: 13, ...style }}>
+      <div
+        style={{
+          height,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: theme.textMuted,
+          fontSize: 13,
+          ...style,
+        }}
+      >
         No data
       </div>
-    );
+    )
   }
-  const max = Math.max(...data.map((d) => d.value), 1);
+  const max = Math.max(...data.map((d) => d.value), 1)
   return (
     <div style={{ ...style }}>
       <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height }}>
@@ -53,8 +63,9 @@ export function RevenueChart({
         ))}
       </div>
       <div style={{ marginTop: 8, fontSize: 12, color: theme.textSecondary }}>
-        {currency}{data.reduce((s, d) => s + d.value, 0).toLocaleString()} total
+        {currency}
+        {data.reduce((s, d) => s + d.value, 0).toLocaleString()} total
       </div>
     </div>
-  );
+  )
 }

@@ -1,20 +1,20 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
-import * as telegram from './telegram.js';
-import * as fulfillment from './fulfillment.js';
-import * as channelSender from './channel-sender.js';
-import { FULFILLMENT_STATUS } from '@armai/shared';
-import type { Env } from '../env.js';
+import type { SupabaseClient } from '@supabase/supabase-js'
+import * as telegram from './telegram.js'
+import * as fulfillment from './fulfillment.js'
+import * as channelSender from './channel-sender.js'
+import { FULFILLMENT_STATUS } from '@armai/shared'
+import type { Env } from '../env.js'
 
 /** Normalize order reference from text: allow short code or full UUID. */
 function normalizeOrderReference(text: string): string | null {
-  const t = text.trim().replace(/\s+/g, ' ');
-  if (!t) return null;
-  const uuidMatch = t.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
-  if (uuidMatch) return uuidMatch[0];
-  if (/^[a-z0-9-]{4,64}$/i.test(t)) return t;
-  const digits = t.replace(/\D/g, '');
-  if (digits.length >= 4) return digits.slice(0, 32);
-  return t.length >= 4 ? t : null;
+  const t = text.trim().replace(/\s+/g, ' ')
+  if (!t) return null
+  const uuidMatch = t.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i)
+  if (uuidMatch) return uuidMatch[0]
+  if (/^[a-z0-9-]{4,64}$/i.test(t)) return t
+  const digits = t.replace(/\D/g, '')
+  if (digits.length >= 4) return digits.slice(0, 32)
+  return t.length >= 4 ? t : null
 }
 
 /** Find order by reference (reference_code or id prefix). */
@@ -24,8 +24,13 @@ async function findOrderByReference(
   ref: string
 ): Promise<{ id: string } | null> {
   if (ref.length >= 32 && /^[0-9a-f-]{36}$/i.test(ref)) {
-    const { data } = await supabase.from('orders').select('id').eq('merchant_id', merchantId).eq('id', ref).maybeSingle();
-    return data;
+    const { data } = await supabase
+      .from('orders')
+      .select('id')
+      .eq('merchant_id', merchantId)
+      .eq('id', ref)
+      .maybeSingle()
+    return data
   }
   const { data } = await supabase
     .from('orders')
@@ -34,8 +39,8 @@ async function findOrderByReference(
     .ilike('reference_code', `${ref}%`)
     .order('created_at', { ascending: false })
     .limit(1)
-    .maybeSingle();
-  if (data) return data;
+    .maybeSingle()
+  if (data) return data
   const { data: byId } = await supabase
     .from('orders')
     .select('id')
@@ -43,8 +48,8 @@ async function findOrderByReference(
     .like('id', `${ref}%`)
     .order('created_at', { ascending: false })
     .limit(1)
-    .maybeSingle();
-  return byId;
+    .maybeSingle()
+  return byId
 }
 
 /**
@@ -54,20 +59,24 @@ async function findOrderByReference(
 export async function createFromTelegram(
   supabase: SupabaseClient,
   p: {
-    merchantId: string;
-    telegramMessageId: string;
-    imageUrl?: string;
-    fileId?: string;
-    caption?: string;
-    telegramUserId?: string;
+    merchantId: string
+    telegramMessageId: string
+    imageUrl?: string
+    fileId?: string
+    caption?: string
+    telegramUserId?: string
   }
-): Promise<{ status: 'linked' | 'ambiguous' | 'awaiting_order_reference' | 'failed'; shipmentImageId?: string; orderId?: string }> {
-  const refFromCaption = p.caption ? normalizeOrderReference(p.caption) : null;
-  let orderId: string | null = null;
+): Promise<{
+  status: 'linked' | 'ambiguous' | 'awaiting_order_reference' | 'failed'
+  shipmentImageId?: string
+  orderId?: string
+}> {
+  const refFromCaption = p.caption ? normalizeOrderReference(p.caption) : null
+  let orderId: string | null = null
 
   if (refFromCaption) {
-    const order = await findOrderByReference(supabase, p.merchantId, refFromCaption);
-    if (order) orderId = order.id;
+    const order = await findOrderByReference(supabase, p.merchantId, refFromCaption)
+    if (order) orderId = order.id
   }
 
   if (!orderId && refFromCaption) {
@@ -86,7 +95,7 @@ export async function createFromTelegram(
         updated_at: new Date().toISOString(),
       })
       .select('id')
-      .single();
+      .single()
     await telegram.recordTelegramOperationEvent(supabase, {
       merchantId: p.merchantId,
       relatedShipmentImageId: img?.id,
@@ -94,8 +103,8 @@ export async function createFromTelegram(
       eventNote: 'Caption had reference but order not found',
       actorType: 'telegram_admin',
       actorId: p.telegramUserId,
-    });
-    return { status: 'ambiguous', shipmentImageId: img?.id };
+    })
+    return { status: 'ambiguous', shipmentImageId: img?.id }
   }
 
   if (!orderId) {
@@ -107,11 +116,11 @@ export async function createFromTelegram(
       .in('fulfillment_status', ['pending_fulfillment', null])
       .order('created_at', { ascending: false })
       .limit(1)
-      .maybeSingle();
-    if (recent) orderId = recent.id;
+      .maybeSingle()
+    if (recent) orderId = recent.id
   }
 
-  const processingStatus = orderId ? 'linked' : 'awaiting_order_reference';
+  const processingStatus = orderId ? 'linked' : 'awaiting_order_reference'
   const { data: img, error } = await supabase
     .from('shipment_images')
     .insert({
@@ -128,10 +137,10 @@ export async function createFromTelegram(
       updated_at: new Date().toISOString(),
     })
     .select('id')
-    .single();
+    .single()
 
   if (error || !img) {
-    return { status: 'failed' };
+    return { status: 'failed' }
   }
 
   await telegram.recordTelegramOperationEvent(supabase, {
@@ -142,14 +151,14 @@ export async function createFromTelegram(
     eventNote: orderId ? 'Auto-linked' : 'Awaiting order reference',
     actorType: 'telegram_admin',
     actorId: p.telegramUserId,
-  });
+  })
 
   if (orderId) {
-    await linkShipmentImageToOrder(supabase, p.merchantId, img.id, orderId, p.telegramUserId);
-    return { status: 'linked', shipmentImageId: img.id, orderId };
+    await linkShipmentImageToOrder(supabase, p.merchantId, img.id, orderId, p.telegramUserId)
+    return { status: 'linked', shipmentImageId: img.id, orderId }
   }
 
-  return { status: 'awaiting_order_reference', shipmentImageId: img.id };
+  return { status: 'awaiting_order_reference', shipmentImageId: img.id }
 }
 
 /**
@@ -162,14 +171,14 @@ async function linkShipmentImageToOrder(
   orderId: string,
   telegramUserId?: string | null
 ) {
-  const now = new Date().toISOString();
+  const now = new Date().toISOString()
   const { data: img } = await supabase
     .from('shipment_images')
     .select('image_url')
     .eq('id', shipmentImageId)
     .eq('merchant_id', merchantId)
-    .single();
-  if (!img) return;
+    .single()
+  if (!img) return
 
   const { data: ship, error: shipErr } = await supabase
     .from('order_shipments')
@@ -185,21 +194,21 @@ async function linkShipmentImageToOrder(
       updated_at: now,
     })
     .select('id')
-    .single();
+    .single()
 
-  if (shipErr || !ship) return;
+  if (shipErr || !ship) return
 
   await supabase
     .from('orders')
     .update({ fulfillment_status: FULFILLMENT_STATUS.SHIPPED, updated_at: now })
     .eq('id', orderId)
-    .eq('merchant_id', merchantId);
+    .eq('merchant_id', merchantId)
 
   await supabase
     .from('shipment_images')
     .update({ processing_status: 'linked', order_id: orderId, updated_at: now })
     .eq('id', shipmentImageId)
-    .eq('merchant_id', merchantId);
+    .eq('merchant_id', merchantId)
 
   await supabase.from('order_fulfillment_events').insert({
     merchant_id: merchantId,
@@ -209,7 +218,7 @@ async function linkShipmentImageToOrder(
     event_note: 'From Telegram shipment image',
     actor_type: 'merchant_admin',
     actor_id: null,
-  });
+  })
 
   await telegram.recordTelegramOperationEvent(supabase, {
     merchantId,
@@ -218,11 +227,18 @@ async function linkShipmentImageToOrder(
     eventType: 'shipment_image_linked',
     actorType: 'telegram_admin',
     actorId: telegramUserId,
-  });
+  })
 
-  const settings = await telegram.getMerchantTelegramSettings(supabase, merchantId);
+  const settings = await telegram.getMerchantTelegramSettings(supabase, merchantId)
   if (settings.telegram_auto_send_shipment_confirmation !== false) {
-    await sendShipmentImageToCustomer(supabase, merchantId, orderId, ship.id, shipmentImageId, img.image_url);
+    await sendShipmentImageToCustomer(
+      supabase,
+      merchantId,
+      orderId,
+      ship.id,
+      shipmentImageId,
+      img.image_url
+    )
   }
 }
 
@@ -241,11 +257,11 @@ export async function sendShipmentImageToCustomer(
     .select('conversation_id')
     .eq('id', orderId)
     .eq('merchant_id', merchantId)
-    .single();
-  if (!order?.conversation_id) return { sent: false };
+    .single()
+  if (!order?.conversation_id) return { sent: false }
 
-  const text = 'Your order has been shipped. See the shipment slip below.';
-  const bodyText = imageUrl ? text : 'Your order has been shipped.';
+  const text = 'Your order has been shipped. See the shipment slip below.'
+  const bodyText = imageUrl ? text : 'Your order has been shipped.'
 
   if (env) {
     const result = await channelSender.sendChannelMessage({
@@ -255,18 +271,18 @@ export async function sendShipmentImageToCustomer(
       payload: imageUrl
         ? { text: bodyText, media_url: imageUrl, message_type: 'image' }
         : { text: bodyText, message_type: 'text' },
-    });
-    const now = new Date().toISOString();
+    })
+    const now = new Date().toISOString()
     await supabase
       .from('order_shipments')
       .update({ customer_notified_at: now, updated_at: now })
       .eq('id', shipmentId)
-      .eq('merchant_id', merchantId);
+      .eq('merchant_id', merchantId)
     await supabase
       .from('shipment_images')
       .update({ processing_status: 'sent_to_customer', updated_at: now })
       .eq('id', shipmentImageId)
-      .eq('merchant_id', merchantId);
+      .eq('merchant_id', merchantId)
     await supabase.from('order_fulfillment_events').insert({
       merchant_id: merchantId,
       order_id: orderId,
@@ -275,15 +291,15 @@ export async function sendShipmentImageToCustomer(
       event_note: 'Shipment image sent',
       actor_type: 'system',
       actor_id: null,
-    });
+    })
     await telegram.recordTelegramOperationEvent(supabase, {
       merchantId,
       relatedOrderId: orderId,
       relatedShipmentImageId: shipmentImageId,
       eventType: 'shipment_confirmation_sent',
       actorType: 'system',
-    });
-    return { sent: result.sent };
+    })
+    return { sent: result.sent }
   }
 
   const { error } = await supabase.from('messages').insert({
@@ -293,21 +309,21 @@ export async function sendShipmentImageToCustomer(
     content_type: imageUrl ? 'image' : 'text',
     content_text: bodyText,
     content_metadata: imageUrl ? { url: imageUrl } : undefined,
-  });
-  if (error) return { sent: false };
+  })
+  if (error) return { sent: false }
 
-  const now = new Date().toISOString();
+  const now = new Date().toISOString()
   await supabase
     .from('order_shipments')
     .update({ customer_notified_at: now, updated_at: now })
     .eq('id', shipmentId)
-    .eq('merchant_id', merchantId);
+    .eq('merchant_id', merchantId)
 
   await supabase
     .from('shipment_images')
     .update({ processing_status: 'sent_to_customer', updated_at: now })
     .eq('id', shipmentImageId)
-    .eq('merchant_id', merchantId);
+    .eq('merchant_id', merchantId)
 
   await supabase.from('order_fulfillment_events').insert({
     merchant_id: merchantId,
@@ -317,7 +333,7 @@ export async function sendShipmentImageToCustomer(
     event_note: 'Shipment image sent',
     actor_type: 'system',
     actor_id: null,
-  });
+  })
 
   await telegram.recordTelegramOperationEvent(supabase, {
     merchantId,
@@ -325,9 +341,9 @@ export async function sendShipmentImageToCustomer(
     relatedShipmentImageId: shipmentImageId,
     eventType: 'shipment_confirmation_sent',
     actorType: 'system',
-  });
+  })
 
-  return { sent: true };
+  return { sent: true }
 }
 
 /**
@@ -340,11 +356,11 @@ export async function tryLinkFromTelegramReply(
   chatId: string,
   replyText: string
 ): Promise<boolean> {
-  const ref = normalizeOrderReference(replyText);
-  if (!ref) return false;
+  const ref = normalizeOrderReference(replyText)
+  if (!ref) return false
 
-  const order = await findOrderByReference(supabase, connection.merchant_id, ref);
-  if (!order) return false;
+  const order = await findOrderByReference(supabase, connection.merchant_id, ref)
+  if (!order) return false
 
   const { data: pending } = await supabase
     .from('shipment_images')
@@ -354,16 +370,20 @@ export async function tryLinkFromTelegramReply(
     .is('order_id', null)
     .order('created_at', { ascending: false })
     .limit(1)
-    .maybeSingle();
+    .maybeSingle()
 
-  if (!pending) return false;
+  if (!pending) return false
 
   await supabase
     .from('shipment_images')
-    .update({ order_id: order.id, processing_status: 'linked', updated_at: new Date().toISOString() })
+    .update({
+      order_id: order.id,
+      processing_status: 'linked',
+      updated_at: new Date().toISOString(),
+    })
     .eq('id', pending.id)
-    .eq('merchant_id', connection.merchant_id);
+    .eq('merchant_id', connection.merchant_id)
 
-  await linkShipmentImageToOrder(supabase, connection.merchant_id, pending.id, order.id, null);
-  return true;
+  await linkShipmentImageToOrder(supabase, connection.merchant_id, pending.id, order.id, null)
+  return true
 }

@@ -1,11 +1,16 @@
-import { useCallback, useEffect, useState } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
-import { merchantApi, paymentAccountsApi, type PaymentAccountRow, type CreatePaymentAccountBody } from '../../lib/api';
-import { getMerchantDefaultCurrency, FALLBACK_CURRENCY } from '@armai/shared';
-import { PageShell, Card, CardBody, EmptyState } from '../../components/ui';
-import { FormModal, SaveCancelFooter, FieldGroup } from '../../components/merchant';
-import { Badge } from '../../components/ui';
-import { theme } from '../../theme';
+import { useCallback, useEffect, useState } from 'react'
+import { useAuth } from '../../contexts/AuthContext'
+import {
+  merchantApi,
+  paymentAccountsApi,
+  type PaymentAccountRow,
+  type CreatePaymentAccountBody,
+} from '../../lib/api'
+import { getMerchantDefaultCurrency, FALLBACK_CURRENCY } from '@armai/shared'
+import { PageShell, Card, CardBody, EmptyState } from '../../components/ui'
+import { FormModal, SaveCancelFooter, FieldGroup } from '../../components/merchant'
+import { Badge } from '../../components/ui'
+import { theme } from '../../theme'
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
@@ -15,20 +20,20 @@ const inputStyle: React.CSSProperties = {
   borderRadius: 6,
   color: theme.text,
   fontSize: 13,
-};
+}
 
 export default function MerchantPaymentAccounts() {
-  const { user } = useAuth();
-  const token = user?.accessToken ?? null;
+  const { user } = useAuth()
+  const token = user?.accessToken ?? null
 
-  const [defaultCurrency, setDefaultCurrency] = useState<string>(FALLBACK_CURRENCY);
-  const [accounts, setAccounts] = useState<PaymentAccountRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editing, setEditing] = useState<PaymentAccountRow | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [formError, setFormError] = useState<string | null>(null);
+  const [defaultCurrency, setDefaultCurrency] = useState<string>(FALLBACK_CURRENCY)
+  const [accounts, setAccounts] = useState<PaymentAccountRow[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [modalOpen, setModalOpen] = useState(false)
+  const [editing, setEditing] = useState<PaymentAccountRow | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
 
   const [form, setForm] = useState<CreatePaymentAccountBody>({
     bank_code: '',
@@ -42,38 +47,38 @@ export default function MerchantPaymentAccounts() {
     is_active: true,
     sort_order: 0,
     notes: null,
-  });
+  })
 
   const load = useCallback(() => {
-    if (!token) return;
-    setLoading(true);
-    setError(null);
+    if (!token) return
+    setLoading(true)
+    setError(null)
     paymentAccountsApi
       .list(token, { activeOnly: false })
       .then((r) => setAccounts(r.paymentAccounts))
       .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
-  }, [token]);
+      .finally(() => setLoading(false))
+  }, [token])
 
   useEffect(() => {
-    load();
-  }, [load]);
+    load()
+  }, [load])
 
   useEffect(() => {
-    if (!token) return;
+    if (!token) return
     merchantApi
       .dashboard(token)
       .then((r) => {
         const currency = r.merchant
           ? getMerchantDefaultCurrency(r.merchant.default_currency, r.merchant.default_country)
-          : FALLBACK_CURRENCY;
-        setDefaultCurrency(currency);
+          : FALLBACK_CURRENCY
+        setDefaultCurrency(currency)
       })
-      .catch(() => {});
-  }, [token]);
+      .catch(() => {})
+  }, [token])
 
   const openCreate = () => {
-    setEditing(null);
+    setEditing(null)
     setForm({
       bank_code: '',
       account_name: null,
@@ -86,13 +91,13 @@ export default function MerchantPaymentAccounts() {
       is_active: true,
       sort_order: 0,
       notes: null,
-    });
-    setFormError(null);
-    setModalOpen(true);
-  };
+    })
+    setFormError(null)
+    setModalOpen(true)
+  }
 
   const openEdit = (a: PaymentAccountRow) => {
-    setEditing(a);
+    setEditing(a)
     setForm({
       bank_code: a.bank_code,
       account_name: a.account_name ?? null,
@@ -105,33 +110,33 @@ export default function MerchantPaymentAccounts() {
       is_active: a.is_active,
       sort_order: a.sort_order ?? 0,
       notes: a.notes ?? null,
-    });
-    setFormError(null);
-    setModalOpen(true);
-  };
+    })
+    setFormError(null)
+    setModalOpen(true)
+  }
 
   const closeModal = () => {
-    setModalOpen(false);
-    setEditing(null);
-    setFormError(null);
-  };
+    setModalOpen(false)
+    setEditing(null)
+    setFormError(null)
+  }
 
   const validate = (): string | null => {
-    if (!form.bank_code?.trim()) return 'Bank code is required.';
-    if (!form.account_number?.trim()) return 'Account number is required.';
-    if (!form.account_holder_name?.trim()) return 'Account holder name is required.';
-    return null;
-  };
+    if (!form.bank_code?.trim()) return 'Bank code is required.'
+    if (!form.account_number?.trim()) return 'Account number is required.'
+    if (!form.account_holder_name?.trim()) return 'Account holder name is required.'
+    return null
+  }
 
   const handleSave = async () => {
-    setFormError(null);
-    const err = validate();
+    setFormError(null)
+    const err = validate()
     if (err) {
-      setFormError(err);
-      return;
+      setFormError(err)
+      return
     }
-    if (!token) return;
-    setSaving(true);
+    if (!token) return
+    setSaving(true)
     try {
       const body = {
         ...form,
@@ -140,23 +145,24 @@ export default function MerchantPaymentAccounts() {
         qr_image_path: form.qr_image_path || null,
         qr_image_object_key: form.qr_image_object_key || null,
         notes: form.notes || null,
-      };
-      if (editing) {
-        await paymentAccountsApi.update(token, editing.id, body);
-      } else {
-        await paymentAccountsApi.create(token, body);
       }
-      closeModal();
-      load();
+      if (editing) {
+        await paymentAccountsApi.update(token, editing.id, body)
+      } else {
+        await paymentAccountsApi.create(token, body)
+      }
+      closeModal()
+      load()
     } catch (e) {
-      setFormError(e instanceof Error ? e.message : 'Save failed');
+      setFormError(e instanceof Error ? e.message : 'Save failed')
     } finally {
-      setSaving(false);
+      setSaving(false)
     }
-  };
+  }
 
-  if (error) return <p style={{ color: theme.danger }}>{error}</p>;
-  if (loading && accounts.length === 0) return <p style={{ color: theme.textSecondary }}>Loading…</p>;
+  if (error) return <p style={{ color: theme.danger }}>{error}</p>
+  if (loading && accounts.length === 0)
+    return <p style={{ color: theme.textSecondary }}>Loading…</p>
 
   return (
     <PageShell
@@ -210,31 +216,94 @@ export default function MerchantPaymentAccounts() {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
                 <tr style={{ textAlign: 'left', borderBottom: `1px solid ${theme.borderMuted}` }}>
-                  <th style={{ padding: '12px 16px', color: theme.textMuted, fontWeight: 600, fontSize: 11, textTransform: 'uppercase' }}>Account</th>
-                  <th style={{ padding: '12px 16px', color: theme.textMuted, fontWeight: 600, fontSize: 11, textTransform: 'uppercase' }}>Number</th>
-                  <th style={{ padding: '12px 16px', color: theme.textMuted, fontWeight: 600, fontSize: 11, textTransform: 'uppercase' }}>Bank</th>
-                  <th style={{ padding: '12px 16px', color: theme.textMuted, fontWeight: 600, fontSize: 11, textTransform: 'uppercase' }}>Primary</th>
-                  <th style={{ padding: '12px 16px', color: theme.textMuted, fontWeight: 600, fontSize: 11, textTransform: 'uppercase' }}>Active</th>
+                  <th
+                    style={{
+                      padding: '12px 16px',
+                      color: theme.textMuted,
+                      fontWeight: 600,
+                      fontSize: 11,
+                      textTransform: 'uppercase',
+                    }}
+                  >
+                    Account
+                  </th>
+                  <th
+                    style={{
+                      padding: '12px 16px',
+                      color: theme.textMuted,
+                      fontWeight: 600,
+                      fontSize: 11,
+                      textTransform: 'uppercase',
+                    }}
+                  >
+                    Number
+                  </th>
+                  <th
+                    style={{
+                      padding: '12px 16px',
+                      color: theme.textMuted,
+                      fontWeight: 600,
+                      fontSize: 11,
+                      textTransform: 'uppercase',
+                    }}
+                  >
+                    Bank
+                  </th>
+                  <th
+                    style={{
+                      padding: '12px 16px',
+                      color: theme.textMuted,
+                      fontWeight: 600,
+                      fontSize: 11,
+                      textTransform: 'uppercase',
+                    }}
+                  >
+                    Primary
+                  </th>
+                  <th
+                    style={{
+                      padding: '12px 16px',
+                      color: theme.textMuted,
+                      fontWeight: 600,
+                      fontSize: 11,
+                      textTransform: 'uppercase',
+                    }}
+                  >
+                    Active
+                  </th>
                   <th style={{ width: 80 }}></th>
                 </tr>
               </thead>
               <tbody>
                 {accounts.map((a) => (
                   <tr key={a.id} style={{ borderBottom: `1px solid ${theme.borderMuted}` }}>
-                    <td style={{ padding: '12px 16px', fontWeight: 500 }}>{a.account_name ?? a.account_number}</td>
+                    <td style={{ padding: '12px 16px', fontWeight: 500 }}>
+                      {a.account_name ?? a.account_number}
+                    </td>
                     <td style={{ padding: '12px 16px' }}>{a.account_number}</td>
                     <td style={{ padding: '12px 16px' }}>{a.bank_code}</td>
                     <td style={{ padding: '12px 16px' }}>
                       {a.is_primary ? <Badge variant="gold">Primary</Badge> : '—'}
                     </td>
                     <td style={{ padding: '12px 16px' }}>
-                      {a.is_active ? <Badge variant="success">Active</Badge> : <Badge variant="default">Inactive</Badge>}
+                      {a.is_active ? (
+                        <Badge variant="success">Active</Badge>
+                      ) : (
+                        <Badge variant="default">Inactive</Badge>
+                      )}
                     </td>
                     <td style={{ padding: '12px 16px' }}>
                       <button
                         type="button"
                         onClick={() => openEdit(a)}
-                        style={{ background: 'none', border: 0, color: theme.primary, cursor: 'pointer', fontSize: 13, fontWeight: 500 }}
+                        style={{
+                          background: 'none',
+                          border: 0,
+                          color: theme.primary,
+                          cursor: 'pointer',
+                          fontSize: 13,
+                          fontWeight: 500,
+                        }}
                       >
                         Edit
                       </button>
@@ -251,9 +320,18 @@ export default function MerchantPaymentAccounts() {
         open={modalOpen}
         onClose={closeModal}
         title={editing ? 'Edit payment account' : 'Add payment account'}
-        footer={<SaveCancelFooter onCancel={closeModal} onSave={handleSave} saving={saving} saveLabel={editing ? 'Update' : 'Create'} />}
+        footer={
+          <SaveCancelFooter
+            onCancel={closeModal}
+            onSave={handleSave}
+            saving={saving}
+            saveLabel={editing ? 'Update' : 'Create'}
+          />
+        }
       >
-        {formError && <p style={{ color: theme.danger, marginBottom: 12, fontSize: 13 }}>{formError}</p>}
+        {formError && (
+          <p style={{ color: theme.danger, marginBottom: 12, fontSize: 13 }}>{formError}</p>
+        )}
         <FieldGroup label="Bank code" hint="Required (e.g. SCB, BBL).">
           <input
             type="text"
@@ -295,7 +373,12 @@ export default function MerchantPaymentAccounts() {
             type="text"
             maxLength={3}
             value={form.currency ?? defaultCurrency}
-            onChange={(e) => setForm((f) => ({ ...f, currency: (e.target.value.toUpperCase() || defaultCurrency).slice(0, 3) }))}
+            onChange={(e) =>
+              setForm((f) => ({
+                ...f,
+                currency: (e.target.value.toUpperCase() || defaultCurrency).slice(0, 3),
+              }))
+            }
             style={inputStyle}
             placeholder={defaultCurrency}
           />
@@ -313,7 +396,9 @@ export default function MerchantPaymentAccounts() {
           <input
             type="text"
             value={form.qr_image_object_key ?? ''}
-            onChange={(e) => setForm((f) => ({ ...f, qr_image_object_key: e.target.value || null }))}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, qr_image_object_key: e.target.value || null }))
+            }
             style={inputStyle}
             placeholder="Storage key"
           />
@@ -343,7 +428,9 @@ export default function MerchantPaymentAccounts() {
             onChange={(e) => setForm((f) => ({ ...f, is_primary: e.target.checked }))}
             style={{ marginRight: 8 }}
           />
-          <span style={{ fontSize: 13, color: theme.textSecondary }}>Use as default for new orders</span>
+          <span style={{ fontSize: 13, color: theme.textSecondary }}>
+            Use as default for new orders
+          </span>
         </FieldGroup>
         <FieldGroup label="Active">
           <input
@@ -356,5 +443,5 @@ export default function MerchantPaymentAccounts() {
         </FieldGroup>
       </FormModal>
     </PageShell>
-  );
+  )
 }

@@ -1,18 +1,35 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
-import type { CreateProductCategoryBody, CreateProductBody, CreateProductVariantBody, CreateProductKeywordBody } from '@armai/shared';
-import { getMerchantDefaultCurrency, FALLBACK_CURRENCY } from '@armai/shared';
-import * as merchantService from './merchant.js';
-import * as contextCache from './ai-context-cache.js';
+import type { SupabaseClient } from '@supabase/supabase-js'
+import type {
+  CreateProductCategoryBody,
+  CreateProductBody,
+  CreateProductVariantBody,
+  CreateProductKeywordBody,
+} from '@armai/shared'
+import { getMerchantDefaultCurrency, FALLBACK_CURRENCY } from '@armai/shared'
+import * as merchantService from './merchant.js'
+import * as contextCache from './ai-context-cache.js'
 
-export async function listCategories(supabase: SupabaseClient, merchantId: string, activeOnly = true) {
-  let q = supabase.from('product_categories').select('*').eq('merchant_id', merchantId).order('sort_order');
-  if (activeOnly) q = q.eq('is_active', true);
-  const { data, error } = await q;
-  if (error) throw new Error(error.message);
-  return data ?? [];
+export async function listCategories(
+  supabase: SupabaseClient,
+  merchantId: string,
+  activeOnly = true
+) {
+  let q = supabase
+    .from('product_categories')
+    .select('*')
+    .eq('merchant_id', merchantId)
+    .order('sort_order')
+  if (activeOnly) q = q.eq('is_active', true)
+  const { data, error } = await q
+  if (error) throw new Error(error.message)
+  return data ?? []
 }
 
-export async function createCategory(supabase: SupabaseClient, merchantId: string, body: CreateProductCategoryBody) {
+export async function createCategory(
+  supabase: SupabaseClient,
+  merchantId: string,
+  body: CreateProductCategoryBody
+) {
   const { data, error } = await supabase
     .from('product_categories')
     .insert({
@@ -23,13 +40,18 @@ export async function createCategory(supabase: SupabaseClient, merchantId: strin
       is_active: body.is_active ?? true,
     })
     .select()
-    .single();
-  if (error) throw new Error(error.message);
-  contextCache.invalidateCatalogAndKnowledge(merchantId);
-  return data;
+    .single()
+  if (error) throw new Error(error.message)
+  contextCache.invalidateCatalogAndKnowledge(merchantId)
+  return data
 }
 
-export async function updateCategory(supabase: SupabaseClient, merchantId: string, categoryId: string, body: Partial<CreateProductCategoryBody>) {
+export async function updateCategory(
+  supabase: SupabaseClient,
+  merchantId: string,
+  categoryId: string,
+  body: Partial<CreateProductCategoryBody>
+) {
   const { data, error } = await supabase
     .from('product_categories')
     .update({
@@ -39,20 +61,28 @@ export async function updateCategory(supabase: SupabaseClient, merchantId: strin
     .eq('id', categoryId)
     .eq('merchant_id', merchantId)
     .select()
-    .single();
-  if (error) throw new Error(error.message);
-  contextCache.invalidateCatalogAndKnowledge(merchantId);
-  return data;
+    .single()
+  if (error) throw new Error(error.message)
+  contextCache.invalidateCatalogAndKnowledge(merchantId)
+  return data
 }
 
-export async function listProducts(supabase: SupabaseClient, merchantId: string, opts: { categoryId?: string; status?: string; aiVisibleOnly?: boolean } = {}) {
-  let q = supabase.from('products').select('*').eq('merchant_id', merchantId).order('created_at', { ascending: false });
-  if (opts.categoryId) q = q.eq('category_id', opts.categoryId);
-  if (opts.status) q = q.eq('status', opts.status);
-  if (opts.aiVisibleOnly) q = q.eq('ai_visible', true).eq('status', 'active');
-  const { data, error } = await q;
-  if (error) throw new Error(error.message);
-  return data ?? [];
+export async function listProducts(
+  supabase: SupabaseClient,
+  merchantId: string,
+  opts: { categoryId?: string; status?: string; aiVisibleOnly?: boolean } = {}
+) {
+  let q = supabase
+    .from('products')
+    .select('*')
+    .eq('merchant_id', merchantId)
+    .order('created_at', { ascending: false })
+  if (opts.categoryId) q = q.eq('category_id', opts.categoryId)
+  if (opts.status) q = q.eq('status', opts.status)
+  if (opts.aiVisibleOnly) q = q.eq('ai_visible', true).eq('status', 'active')
+  const { data, error } = await q
+  if (error) throw new Error(error.message)
+  return data ?? []
 }
 
 export async function getProduct(supabase: SupabaseClient, merchantId: string, productId: string) {
@@ -61,17 +91,21 @@ export async function getProduct(supabase: SupabaseClient, merchantId: string, p
     .select('*')
     .eq('id', productId)
     .eq('merchant_id', merchantId)
-    .single();
-  if (error) throw new Error(error.message);
-  return data;
+    .single()
+  if (error) throw new Error(error.message)
+  return data
 }
 
-export async function createProduct(supabase: SupabaseClient, merchantId: string, body: CreateProductBody) {
-  const merchant = await merchantService.getMerchantById(supabase, merchantId).catch(() => null);
+export async function createProduct(
+  supabase: SupabaseClient,
+  merchantId: string,
+  body: CreateProductBody
+) {
+  const merchant = await merchantService.getMerchantById(supabase, merchantId).catch(() => null)
   const defaultCurrency = merchant
     ? getMerchantDefaultCurrency(merchant.default_currency, merchant.default_country)
-    : FALLBACK_CURRENCY;
-  const currency = body.currency ?? defaultCurrency;
+    : FALLBACK_CURRENCY
+  const currency = body.currency ?? defaultCurrency
   const { data, error } = await supabase
     .from('products')
     .insert({
@@ -89,37 +123,50 @@ export async function createProduct(supabase: SupabaseClient, merchantId: string
       ai_visible: body.ai_visible ?? true,
     })
     .select()
-    .single();
-  if (error) throw new Error(error.message);
-  contextCache.invalidateCatalogAndKnowledge(merchantId);
-  return data;
+    .single()
+  if (error) throw new Error(error.message)
+  contextCache.invalidateCatalogAndKnowledge(merchantId)
+  return data
 }
 
-export async function updateProduct(supabase: SupabaseClient, merchantId: string, productId: string, body: Partial<CreateProductBody>) {
+export async function updateProduct(
+  supabase: SupabaseClient,
+  merchantId: string,
+  productId: string,
+  body: Partial<CreateProductBody>
+) {
   const { data, error } = await supabase
     .from('products')
     .update({ ...body, updated_at: new Date().toISOString() })
     .eq('id', productId)
     .eq('merchant_id', merchantId)
     .select()
-    .single();
-  if (error) throw new Error(error.message);
-  contextCache.invalidateCatalogAndKnowledge(merchantId);
-  return data;
+    .single()
+  if (error) throw new Error(error.message)
+  contextCache.invalidateCatalogAndKnowledge(merchantId)
+  return data
 }
 
-export async function listVariants(supabase: SupabaseClient, merchantId: string, productId: string) {
+export async function listVariants(
+  supabase: SupabaseClient,
+  merchantId: string,
+  productId: string
+) {
   const { data, error } = await supabase
     .from('product_variants')
     .select('*')
     .eq('merchant_id', merchantId)
     .eq('product_id', productId)
-    .order('created_at');
-  if (error) throw new Error(error.message);
-  return data ?? [];
+    .order('created_at')
+  if (error) throw new Error(error.message)
+  return data ?? []
 }
 
-export async function createVariant(supabase: SupabaseClient, merchantId: string, body: CreateProductVariantBody) {
+export async function createVariant(
+  supabase: SupabaseClient,
+  merchantId: string,
+  body: CreateProductVariantBody
+) {
   const { data, error } = await supabase
     .from('product_variants')
     .insert({
@@ -134,51 +181,71 @@ export async function createVariant(supabase: SupabaseClient, merchantId: string
       status: body.status ?? 'active',
     })
     .select()
-    .single();
-  if (error) throw new Error(error.message);
-  return data;
+    .single()
+  if (error) throw new Error(error.message)
+  return data
 }
 
-export async function listKeywords(supabase: SupabaseClient, merchantId: string, productId?: string) {
-  let q = supabase.from('product_keywords').select('*').eq('merchant_id', merchantId);
-  if (productId) q = q.eq('product_id', productId);
-  const { data, error } = await q;
-  if (error) throw new Error(error.message);
-  return data ?? [];
+export async function listKeywords(
+  supabase: SupabaseClient,
+  merchantId: string,
+  productId?: string
+) {
+  let q = supabase.from('product_keywords').select('*').eq('merchant_id', merchantId)
+  if (productId) q = q.eq('product_id', productId)
+  const { data, error } = await q
+  if (error) throw new Error(error.message)
+  return data ?? []
 }
 
-export async function createKeyword(supabase: SupabaseClient, merchantId: string, body: CreateProductKeywordBody) {
+export async function createKeyword(
+  supabase: SupabaseClient,
+  merchantId: string,
+  body: CreateProductKeywordBody
+) {
   const { data, error } = await supabase
     .from('product_keywords')
     .insert({ merchant_id: merchantId, product_id: body.product_id, keyword: body.keyword })
     .select()
-    .single();
-  if (error) throw new Error(error.message);
-  return data;
+    .single()
+  if (error) throw new Error(error.message)
+  return data
 }
 
-export async function deleteKeyword(supabase: SupabaseClient, merchantId: string, keywordId: string) {
-  const { error } = await supabase.from('product_keywords').delete().eq('id', keywordId).eq('merchant_id', merchantId);
-  if (error) throw new Error(error.message);
+export async function deleteKeyword(
+  supabase: SupabaseClient,
+  merchantId: string,
+  keywordId: string
+) {
+  const { error } = await supabase
+    .from('product_keywords')
+    .delete()
+    .eq('id', keywordId)
+    .eq('merchant_id', merchantId)
+  if (error) throw new Error(error.message)
 }
 
 /** Search products by keyword (for AI retrieval). */
-export async function searchProductsByKeyword(supabase: SupabaseClient, merchantId: string, query: string) {
-  const normalized = query.toLowerCase().trim();
-  if (!normalized) return [];
+export async function searchProductsByKeyword(
+  supabase: SupabaseClient,
+  merchantId: string,
+  query: string
+) {
+  const normalized = query.toLowerCase().trim()
+  if (!normalized) return []
   const { data: kwRows } = await supabase
     .from('product_keywords')
     .select('product_id')
     .eq('merchant_id', merchantId)
-    .ilike('keyword', `%${normalized}%`);
-  const productIds = [...new Set((kwRows ?? []).map((r) => r.product_id))];
-  if (productIds.length === 0) return [];
+    .ilike('keyword', `%${normalized}%`)
+  const productIds = [...new Set((kwRows ?? []).map((r) => r.product_id))]
+  if (productIds.length === 0) return []
   const { data: products } = await supabase
     .from('products')
     .select('*')
     .eq('merchant_id', merchantId)
     .eq('status', 'active')
     .eq('ai_visible', true)
-    .in('id', productIds);
-  return products ?? [];
+    .in('id', productIds)
+  return products ?? []
 }

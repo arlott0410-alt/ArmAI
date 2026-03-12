@@ -1,4 +1,4 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 /**
  * Start support access session: log to support_access_logs. Read-only; no session impersonation.
@@ -16,14 +16,20 @@ export async function startSupportAccess(
       user_agent: payload.userAgent,
     })
     .select('id')
-    .single();
-  if (error) throw new Error(error.message);
-  return data!.id;
+    .single()
+  if (error) throw new Error(error.message)
+  return data!.id
 }
 
 export async function logAudit(
   supabase: SupabaseClient,
-  payload: { actorId: string; action: string; resourceType?: string; resourceId?: string; details?: unknown }
+  payload: {
+    actorId: string
+    action: string
+    resourceType?: string
+    resourceId?: string
+    details?: unknown
+  }
 ) {
   const { error } = await supabase.from('audit_logs').insert({
     actor_id: payload.actorId,
@@ -31,6 +37,6 @@ export async function logAudit(
     resource_type: payload.resourceType,
     resource_id: payload.resourceId,
     details: payload.details as Record<string, unknown> | null,
-  });
-  if (error) throw new Error(error.message);
+  })
+  if (error) throw new Error(error.message)
 }

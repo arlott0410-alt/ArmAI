@@ -1,14 +1,14 @@
-import React from 'react';
-import { theme } from '../../theme';
+import React from 'react'
+import { theme } from '../../theme'
 
 export function ActionFooter({
   primary,
   secondary,
   style,
 }: {
-  primary: React.ReactNode | null;
-  secondary?: React.ReactNode;
-  style?: React.CSSProperties;
+  primary: React.ReactNode | null
+  secondary?: React.ReactNode
+  style?: React.CSSProperties
 }) {
   return (
     <div
@@ -27,5 +27,5 @@ export function ActionFooter({
       <div>{secondary}</div>
       <div>{primary}</div>
     </div>
-  );
+  )
 }

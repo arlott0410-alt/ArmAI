@@ -27,7 +27,7 @@ export const theme = {
   dangerMuted: 'rgba(239, 68, 68, 0.2)',
   info: '#3b82f6',
   infoMuted: 'rgba(59, 130, 246, 0.2)',
-} as const;
+} as const
 
 /** Spacing scale (px). Use for padding, gaps, margins. */
 export const spacing = {
@@ -37,7 +37,7 @@ export const spacing = {
   lg: 16,
   xl: 24,
   xxl: 32,
-} as const;
+} as const
 
 /** Typography: font size and weight for hierarchy. */
 export const typography = {
@@ -46,6 +46,6 @@ export const typography = {
   body: { fontSize: 14 },
   bodySmall: { fontSize: 13 },
   caption: { fontSize: 12 },
-} as const;
+} as const
 
-export type Theme = typeof theme;
+export type Theme = typeof theme

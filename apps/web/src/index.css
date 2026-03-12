@@ -1,9 +1,9 @@
 /* ArmAI premium theme: Black + Gold */
 :root {
-  --armai-bg: #0B0B0B;
+  --armai-bg: #0b0b0b;
   --armai-surface: #121212;
-  --armai-primary: #D4AF37;
-  --armai-highlight: #F5D67A;
+  --armai-primary: #d4af37;
+  --armai-highlight: #f5d67a;
   --armai-text: #fafafa;
   --armai-text-muted: #71717a;
 }
@@ -14,7 +14,12 @@
 
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
   font-size: 14px;
   line-height: 1.5;
   color: var(--armai-text);

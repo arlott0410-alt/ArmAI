@@ -1,10 +1,10 @@
-import { z } from 'zod';
+import { z } from 'zod'
 
 /** Bank webhook incoming payload - structure depends on parser; validate after parser selection. */
 export const bankWebhookHeadersSchema = z.object({
   'x-bank-source': z.string().min(1).max(64).optional(),
   'x-idempotency-key': z.string().uuid().optional(),
-});
+})
 
 /** Generic normalized transaction for matching. */
 export const normalizedTransactionSchema = z.object({
@@ -14,9 +14,9 @@ export const normalizedTransactionSchema = z.object({
   reference_code: z.string().nullable(),
   bank_tx_id: z.string().nullable(),
   raw_parser_id: z.string(),
-});
+})
 
-export type NormalizedTransaction = z.infer<typeof normalizedTransactionSchema>;
+export type NormalizedTransaction = z.infer<typeof normalizedTransactionSchema>
 
 /** Normalized candidate after parsing (receiver fields for scoping). */
 export const normalizedTransactionCandidateSchema = z.object({
@@ -35,4 +35,4 @@ export const normalizedTransactionCandidateSchema = z.object({
   datetime: z.string(),
   bank_tx_id: z.string().nullable().optional(),
   raw_parser_id: z.string(),
-});
+})

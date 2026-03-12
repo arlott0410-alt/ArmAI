@@ -1,15 +1,15 @@
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { theme } from '../theme';
+import { Outlet, NavLink, useNavigate } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
+import { theme } from '../theme'
 
 export default function SuperLayout() {
-  const { user, signOut } = useAuth();
-  const navigate = useNavigate();
+  const { user, signOut } = useAuth()
+  const navigate = useNavigate()
 
   const handleSignOut = async () => {
-    await signOut();
-    navigate('/login');
-  };
+    await signOut()
+    navigate('/login')
+  }
 
   const navStyle = ({ isActive }: { isActive: boolean }) => ({
     display: 'block',
@@ -20,7 +20,7 @@ export default function SuperLayout() {
     fontSize: 13,
     fontWeight: isActive ? 600 : 500,
     borderLeft: isActive ? `3px solid ${theme.primary}` : '3px solid transparent',
-  });
+  })
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: theme.background }}>
@@ -35,19 +35,44 @@ export default function SuperLayout() {
         }}
       >
         <div style={{ marginBottom: 24 }}>
-          <span style={{ fontSize: 18, fontWeight: 700, color: theme.text, letterSpacing: '-0.02em' }}>ArmAI</span>
-          <span style={{ fontSize: 11, color: theme.primary, marginLeft: 6, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+          <span
+            style={{ fontSize: 18, fontWeight: 700, color: theme.text, letterSpacing: '-0.02em' }}
+          >
+            ArmAI
+          </span>
+          <span
+            style={{
+              fontSize: 11,
+              color: theme.primary,
+              marginLeft: 6,
+              fontWeight: 600,
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
+            }}
+          >
             Command Center
           </span>
         </div>
         <nav style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <NavLink to="/super/dashboard" style={navStyle}>Overview</NavLink>
-          <NavLink to="/super/merchants" style={navStyle}>Merchants</NavLink>
-          <NavLink to="/super/billing" style={navStyle}>Billing</NavLink>
-          <NavLink to="/super/support" style={navStyle}>Support</NavLink>
-          <NavLink to="/super/audit" style={navStyle}>Audit</NavLink>
+          <NavLink to="/super/dashboard" style={navStyle}>
+            Overview
+          </NavLink>
+          <NavLink to="/super/merchants" style={navStyle}>
+            Merchants
+          </NavLink>
+          <NavLink to="/super/billing" style={navStyle}>
+            Billing
+          </NavLink>
+          <NavLink to="/super/support" style={navStyle}>
+            Support
+          </NavLink>
+          <NavLink to="/super/audit" style={navStyle}>
+            Audit
+          </NavLink>
         </nav>
-        <div style={{ marginTop: 'auto', paddingTop: 24, borderTop: `1px solid ${theme.borderMuted}` }}>
+        <div
+          style={{ marginTop: 'auto', paddingTop: 24, borderTop: `1px solid ${theme.borderMuted}` }}
+        >
           <div style={{ fontSize: 12, color: theme.textMuted, marginBottom: 8 }}>{user?.email}</div>
           <button
             onClick={handleSignOut}
@@ -68,5 +93,5 @@ export default function SuperLayout() {
         <Outlet />
       </main>
     </div>
-  );
+  )
 }

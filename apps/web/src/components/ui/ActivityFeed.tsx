@@ -1,13 +1,13 @@
-import React from 'react';
-import { theme } from '../../theme';
+import React from 'react'
+import { theme } from '../../theme'
 
 export interface ActivityItem {
-  id: string;
-  type: string;
-  at: string;
-  title?: string;
-  subtitle?: string;
-  meta?: React.ReactNode;
+  id: string
+  type: string
+  at: string
+  title?: string
+  subtitle?: string
+  meta?: React.ReactNode
 }
 
 export function ActivityFeed({
@@ -15,16 +15,18 @@ export function ActivityFeed({
   emptyMessage = 'No activity yet',
   style,
 }: {
-  items: ActivityItem[];
-  emptyMessage?: string;
-  style?: React.CSSProperties;
+  items: ActivityItem[]
+  emptyMessage?: string
+  style?: React.CSSProperties
 }) {
   if (items.length === 0) {
     return (
-      <div style={{ padding: 24, textAlign: 'center', color: theme.textMuted, fontSize: 14, ...style }}>
+      <div
+        style={{ padding: 24, textAlign: 'center', color: theme.textMuted, fontSize: 14, ...style }}
+      >
         {emptyMessage}
       </div>
-    );
+    )
   }
   return (
     <ul style={{ margin: 0, padding: 0, listStyle: 'none', ...style }}>
@@ -50,11 +52,11 @@ export function ActivityFeed({
             }}
           />
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 13, color: theme.text }}>
-              {item.title ?? item.type}
-            </div>
+            <div style={{ fontSize: 13, color: theme.text }}>{item.title ?? item.type}</div>
             {item.subtitle != null && (
-              <div style={{ fontSize: 12, color: theme.textSecondary, marginTop: 2 }}>{item.subtitle}</div>
+              <div style={{ fontSize: 12, color: theme.textSecondary, marginTop: 2 }}>
+                {item.subtitle}
+              </div>
             )}
             <div style={{ fontSize: 11, color: theme.textMuted, marginTop: 4 }}>
               {new Date(item.at).toLocaleString()}
@@ -64,5 +66,5 @@ export function ActivityFeed({
         </li>
       ))}
     </ul>
-  );
+  )
 }

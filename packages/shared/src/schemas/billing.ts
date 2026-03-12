@@ -1,7 +1,7 @@
-import { z } from 'zod';
+import { z } from 'zod'
 
-export const billingStatusEnum = z.enum(['active', 'past_due', 'trialing', 'cancelled']);
-export type BillingStatus = z.infer<typeof billingStatusEnum>;
+export const billingStatusEnum = z.enum(['active', 'past_due', 'trialing', 'cancelled'])
+export type BillingStatus = z.infer<typeof billingStatusEnum>
 
 export const merchantPlanRowSchema = z.object({
   id: z.string().uuid(),
@@ -23,8 +23,8 @@ export const merchantPlanRowSchema = z.object({
   notes: z.string().nullable().optional(),
   created_at: z.string(),
   updated_at: z.string(),
-});
-export type MerchantPlanRow = z.infer<typeof merchantPlanRowSchema>;
+})
+export type MerchantPlanRow = z.infer<typeof merchantPlanRowSchema>
 
 export const billingEventRowSchema = z.object({
   id: z.string().uuid(),
@@ -40,8 +40,8 @@ export const billingEventRowSchema = z.object({
   reference_note: z.string().nullable().optional(),
   created_at: z.string(),
   updated_at: z.string(),
-});
-export type MerchantBillingEventRow = z.infer<typeof billingEventRowSchema>;
+})
+export type MerchantBillingEventRow = z.infer<typeof billingEventRowSchema>
 
 export const internalNoteRowSchema = z.object({
   id: z.string().uuid(),
@@ -49,8 +49,8 @@ export const internalNoteRowSchema = z.object({
   actor_id: z.string().uuid().nullable().optional(),
   note: z.string(),
   created_at: z.string(),
-});
-export type MerchantInternalNoteRow = z.infer<typeof internalNoteRowSchema>;
+})
+export type MerchantInternalNoteRow = z.infer<typeof internalNoteRowSchema>
 
 export const updateMerchantPlanBodySchema = z.object({
   plan_code: z.string().max(64).optional(),
@@ -64,8 +64,8 @@ export const updateMerchantPlanBodySchema = z.object({
   cancel_at_period_end: z.boolean().optional(),
   is_auto_renew: z.boolean().optional(),
   notes: z.string().max(5000).nullable().optional(),
-});
-export type UpdateMerchantPlanBody = z.infer<typeof updateMerchantPlanBodySchema>;
+})
+export type UpdateMerchantPlanBody = z.infer<typeof updateMerchantPlanBodySchema>
 
 export const createBillingEventBodySchema = z.object({
   event_type: z.string().min(1).max(64),
@@ -77,10 +77,10 @@ export const createBillingEventBodySchema = z.object({
   paid_at: z.string().datetime().nullable().optional(),
   status: z.string().max(32).optional(),
   reference_note: z.string().max(1000).optional(),
-});
-export type CreateBillingEventBody = z.infer<typeof createBillingEventBodySchema>;
+})
+export type CreateBillingEventBody = z.infer<typeof createBillingEventBodySchema>
 
 export const createInternalNoteBodySchema = z.object({
   note: z.string().min(1).max(10000),
-});
-export type CreateInternalNoteBody = z.infer<typeof createInternalNoteBodySchema>;
+})
+export type CreateInternalNoteBody = z.infer<typeof createInternalNoteBodySchema>

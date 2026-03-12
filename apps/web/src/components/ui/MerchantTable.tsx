@@ -1,11 +1,11 @@
-import React from 'react';
-import { theme } from '../../theme';
+import React from 'react'
+import { theme } from '../../theme'
 
 export interface MerchantTableColumn<T> {
-  key: string;
-  header: string;
-  render: (row: T) => React.ReactNode;
-  width?: string;
+  key: string
+  header: string
+  render: (row: T) => React.ReactNode
+  width?: string
 }
 
 export function MerchantTable<T extends { id: string }>({
@@ -16,19 +16,21 @@ export function MerchantTable<T extends { id: string }>({
   emptyMessage = 'No rows',
   style,
 }: {
-  columns: MerchantTableColumn<T>[];
-  data: T[];
-  keyExtractor?: (row: T) => string;
-  onRowClick?: (row: T) => void;
-  emptyMessage?: string;
-  style?: React.CSSProperties;
+  columns: MerchantTableColumn<T>[]
+  data: T[]
+  keyExtractor?: (row: T) => string
+  onRowClick?: (row: T) => void
+  emptyMessage?: string
+  style?: React.CSSProperties
 }) {
   if (data.length === 0) {
     return (
-      <div style={{ padding: 40, textAlign: 'center', color: theme.textMuted, fontSize: 14, ...style }}>
+      <div
+        style={{ padding: 40, textAlign: 'center', color: theme.textMuted, fontSize: 14, ...style }}
+      >
         {emptyMessage}
       </div>
-    );
+    )
   }
   return (
     <div style={{ overflowX: 'auto', ...style }}>
@@ -80,5 +82,5 @@ export function MerchantTable<T extends { id: string }>({
         </tbody>
       </table>
     </div>
-  );
+  )
 }

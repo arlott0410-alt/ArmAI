@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod'
 
 export const merchantFaqSchema = z.object({
   question: z.string().min(1).max(1000),
@@ -6,7 +6,7 @@ export const merchantFaqSchema = z.object({
   keywords: z.string().max(500).nullable().optional(),
   sort_order: z.number().int().min(0).optional(),
   is_active: z.boolean().optional(),
-});
+})
 
 export const merchantPromotionSchema = z.object({
   title: z.string().min(1).max(255),
@@ -15,7 +15,7 @@ export const merchantPromotionSchema = z.object({
   valid_until: z.string().datetime().nullable().optional(),
   keywords: z.string().max(500).nullable().optional(),
   is_active: z.boolean().optional(),
-});
+})
 
 export const merchantKnowledgeEntrySchema = z.object({
   type: z.string().min(1).max(64),
@@ -24,8 +24,8 @@ export const merchantKnowledgeEntrySchema = z.object({
   keywords: z.string().max(500).nullable().optional(),
   priority: z.number().int().min(0).optional(),
   is_active: z.boolean().optional(),
-});
+})
 
-export type CreateMerchantFaqBody = z.infer<typeof merchantFaqSchema>;
-export type CreateMerchantPromotionBody = z.infer<typeof merchantPromotionSchema>;
-export type CreateMerchantKnowledgeEntryBody = z.infer<typeof merchantKnowledgeEntrySchema>;
+export type CreateMerchantFaqBody = z.infer<typeof merchantFaqSchema>
+export type CreateMerchantPromotionBody = z.infer<typeof merchantPromotionSchema>
+export type CreateMerchantKnowledgeEntryBody = z.infer<typeof merchantKnowledgeEntrySchema>

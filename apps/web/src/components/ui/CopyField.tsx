@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { theme } from '../../theme';
+import React, { useState } from 'react'
+import { theme } from '../../theme'
 
 export function CopyField({
   value,
@@ -8,30 +8,32 @@ export function CopyField({
   onCopy,
   style,
 }: {
-  value: string;
-  label?: string;
-  masked?: boolean;
-  onCopy?: () => void;
-  style?: React.CSSProperties;
+  value: string
+  label?: string
+  masked?: boolean
+  onCopy?: () => void
+  style?: React.CSSProperties
 }) {
-  const [copied, setCopied] = useState(false);
-  const display = masked && value.length > 8 ? '••••••••' + value.slice(-4) : value;
+  const [copied, setCopied] = useState(false)
+  const display = masked && value.length > 8 ? '••••••••' + value.slice(-4) : value
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(value);
-      setCopied(true);
-      onCopy?.();
-      setTimeout(() => setCopied(false), 2000);
+      await navigator.clipboard.writeText(value)
+      setCopied(true)
+      onCopy?.()
+      setTimeout(() => setCopied(false), 2000)
     } catch {
       /* ignore */
     }
-  };
+  }
 
   return (
     <div style={{ marginBottom: 12, ...style }}>
       {label != null && (
-        <div style={{ fontSize: 12, color: theme.textMuted, marginBottom: 4, fontWeight: 500 }}>{label}</div>
+        <div style={{ fontSize: 12, color: theme.textMuted, marginBottom: 4, fontWeight: 500 }}>
+          {label}
+        </div>
       )}
       <div
         style={{
@@ -69,5 +71,5 @@ export function CopyField({
         </button>
       </div>
     </div>
-  );
+  )
 }

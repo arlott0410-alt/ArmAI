@@ -1,5 +1,5 @@
-import React from 'react';
-import { theme } from '../../theme';
+import React from 'react'
+import { theme } from '../../theme'
 
 export function SetupProgressBar({
   currentStep,
@@ -7,20 +7,22 @@ export function SetupProgressBar({
   stepLabels,
   style,
 }: {
-  currentStep: number;
-  totalSteps: number;
-  stepLabels?: string[];
-  style?: React.CSSProperties;
+  currentStep: number
+  totalSteps: number
+  stepLabels?: string[]
+  style?: React.CSSProperties
 }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 0, ...style }}>
       {Array.from({ length: totalSteps }, (_, i) => {
-        const step = i + 1;
-        const done = step < currentStep;
-        const active = step === currentStep;
+        const step = i + 1
+        const done = step < currentStep
+        const active = step === currentStep
         return (
           <React.Fragment key={step}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
+            <div
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}
+            >
               <div
                 style={{
                   width: 24,
@@ -64,8 +66,8 @@ export function SetupProgressBar({
               />
             )}
           </React.Fragment>
-        );
+        )
       })}
     </div>
-  );
+  )
 }

@@ -7,6 +7,7 @@ This report describes the in-place refactor that upgrades ArmAI into a more ente
 ## What changed
 
 ### Laos currency + merchant defaults (LAK-first)
+
 - Added merchant-level defaults: `merchants.default_country` and `merchants.default_currency` (078).
 - Centralized currency logic in `@armai/shared`:
   - `getDefaultCurrencyForCountry()`, `getMerchantDefaultCurrency()`, `formatMoney()`, `parseMoneyInput()`
@@ -19,12 +20,14 @@ This report describes the in-place refactor that upgrades ArmAI into a more ente
 - Web pages (Products / Payment Accounts) use merchant defaults for currency fields.
 
 ### Phone normalization (Laos +856 / 020)
+
 - Added `@armai/shared` phone normalization:
   - `normalizePhoneByCountry()` supports Laos (+856 and local 020 → canonical 856…)
   - generic fallback preserved
 - API customer identity uses `normalizePhoneForMerchant()` so WhatsApp + manual customer edits do not create duplicates.
 
 ### Lao-language visible UI (real i18n layer)
+
 - Added lightweight typed i18n layer in `apps/web` (no heavy frameworks):
   - `I18nProvider`, typed translation keys, dictionaries for `lo`, `th`, `en`
   - merchant locale derived from `merchant.default_country` (`LA` → `lo`, `TH` → `th`)
@@ -33,17 +36,20 @@ This report describes the in-place refactor that upgrades ArmAI into a more ente
   - Merchant Dashboard KPIs + setup readiness text (Lao/Thai/English)
 
 ### Performance & query fan-out reductions
+
 - Moved readiness and summary aggregation into SQL RPCs / views (080) to reduce DB round-trips and avoid “load entire table then count in JS”.
 - Merchant readiness now uses **one RPC** instead of 8 separate count queries.
 - Merchant summary refresh now uses **one RPC** instead of multiple queries + in-app reductions.
-- Super dashboard “setup health” and “expanded merchant list” now use SQL aggregation views instead of selecting *all* product/payment rows into the Worker.
+- Super dashboard “setup health” and “expanded merchant list” now use SQL aggregation views instead of selecting _all_ product/payment rows into the Worker.
 
 ### Safer currency defaults (SQL)
+
 - Backfilled NULL currency fields from merchant defaults and dropped THB column defaults for tables where merchant-driven behavior is required (079).
 
 ---
 
 ## Why it changed
+
 - **Laos readiness:** LAK and +856/020 must be first-class and consistent to avoid duplicated customers and incorrect currency UX.
 - **Enterprise correctness:** currency/locale must be tenant-derived, not hardcoded THB-first.
 - **Performance:** dashboards must not pull entire tables just to compute counts; RPC/views reduce Supabase reads and Worker time.
@@ -54,6 +60,7 @@ This report describes the in-place refactor that upgrades ArmAI into a more ente
 ## Major files touched
 
 ### Shared
+
 - `packages/shared/src/currency.ts`
 - `packages/shared/src/phone.ts`
 - `packages/shared/src/index.ts`
@@ -63,6 +70,7 @@ This report describes the in-place refactor that upgrades ArmAI into a more ente
 - `packages/shared/src/phone.test.ts`
 
 ### API
+
 - `apps/api/src/services/catalog.ts`
 - `apps/api/src/services/payment-accounts.ts`
 - `apps/api/src/services/billing.ts`
@@ -76,6 +84,7 @@ This report describes the in-place refactor that upgrades ArmAI into a more ente
 - `apps/api/src/routes/super/index.ts` (merchant create plan currency derived)
 
 ### Web
+
 - `apps/web/src/i18n/*` (new)
 - `apps/web/src/main.tsx` (wrap with I18nProvider)
 - `apps/web/src/layouts/MerchantLayout.tsx` (locale derived from merchant, translated nav)
@@ -84,6 +93,7 @@ This report describes the in-place refactor that upgrades ArmAI into a more ente
 ---
 
 ## Migrations added
+
 - `sql/078_merchant_defaults.sql` — add `default_country`, `default_currency` to `merchants` + backfill TH/THB for legacy.
 - `sql/079_currency_defaults_cleanup.sql` — backfill NULL currencies from merchant defaults; drop THB column defaults for currency columns.
 - `sql/080_dashboard_rpc_optimizations.sql` — aggregation views + RPCs to reduce dashboard subrequests.
@@ -91,6 +101,7 @@ This report describes the in-place refactor that upgrades ArmAI into a more ente
 ---
 
 ## Localization added
+
 - `lo`, `th`, `en` dictionaries in `apps/web/src/i18n/locales.ts`
 - locale derived from merchant default country (LA → lo, TH → th) and persisted in localStorage
 - translated surfaces: Merchant sidebar + Merchant Dashboard (visible Lao UI)
@@ -98,6 +109,7 @@ This report describes the in-place refactor that upgrades ArmAI into a more ente
 ---
 
 ## Performance/query improvements added
+
 - `merchant_readiness_counts` RPC (single call for readiness counts)
 - `refresh_merchant_dashboard_summary` RPC (single call for summary upsert)
 - aggregation views for super dashboard / super merchant list counts:
@@ -109,12 +121,14 @@ This report describes the in-place refactor that upgrades ArmAI into a more ente
 ---
 
 ## UI system improvements added
+
 - Lightweight typed i18n foundation (no heavy dependency)
 - Existing UI primitives retained; new primitives remain available for incremental rollout.
 
 ---
 
 ## Remaining recommended future work (short)
+
 - Expand i18n coverage across remaining merchant pages (Orders, Order Detail, Products, Payment Accounts, Customers, Settings, Telegram, Bank Sync) and core super pages.
 - Add explicit merchant UI locale override (e.g. `merchant_settings.ui_locale`) if needed.
 - Move additional dashboard computations (billing health, recent activity grouping) into SQL where beneficial.
@@ -129,28 +143,34 @@ This document summarizes the in-place refactor applied to make the ArmAI platfor
 ## 1. What Was Changed
 
 ### Currency and money model
+
 - **Merchant-level defaults:** Added `default_country` (ISO 3166-1 alpha-2) and `default_currency` (ISO 4217) on `merchants`. New merchants can be created with `LA`/`LAK` for Laos; existing rows backfilled to `TH`/`THB`.
 - **Shared currency module:** New `packages/shared/src/currency.ts` with `getDefaultCurrencyForCountry`, `getMerchantDefaultCurrency`, `formatMoney`, `parseMoneyInput`, `FALLBACK_CURRENCY`, `SUPPORTED_CURRENCIES` (LAK, THB, USD).
 - **API:** Product creation, payment account creation, billing event creation, and super-admin merchant/plan creation now resolve currency from merchant defaults (or payment account for order payment targets) instead of hardcoded `THB`. Order-detail switch-to-prepaid uses the selected payment account’s currency for `expected_currency`.
 - **Web:** Merchant dashboard response now includes `merchant` (with `default_currency` / `default_country`). Products and Payment Accounts pages use dashboard merchant to set form default currency (LAK for Laos merchants, THB otherwise).
 
 ### Laos phone normalization
+
 - **Shared phone module:** New `packages/shared/src/phone.ts` with `normalizePhoneByCountry(phone, countryCode)` supporting Laos (+856, local 020 → canonical 856…), Thailand (66/0), and generic fallback. `normalizePhone` retained for backward compatibility.
 - **API customer-identity:** New `normalizePhoneForMerchant(supabase, merchantId, phone)` uses merchant’s `default_country` for country-aware normalization. `getOrCreateChannelIdentity` and `createMerchantCustomer` use it; PATCH customer and WhatsApp webhook auto-link use it so duplicate identities from format variations (e.g. 020 vs +856) are avoided.
 
 ### Laos language / routing
+
 - **Conversation router:** Greeting patterns extended with Lao: `sabaidee`, `ສະບາຍດີ`, `ສະບາຍ` so Lao-language greetings are routed to template response.
 
 ### Enterprise UI foundation
+
 - **Theme:** Added `spacing` and `typography` design tokens in `apps/web/src/theme.ts` for consistent layout and hierarchy.
 - **New components:** `FormSection`, `FieldHint`, `DataTableShell` in `apps/web/src/components/ui` for form grouping, field help text, and table toolbar/loading/empty states. Exported from `components/ui/index.ts`.
 
 ### Developer / shared
+
 - **Merchant type and schema:** `Merchant` in `types.ts` now includes `default_country` and `default_currency`. `createMerchantBodySchema` extended with optional `default_country`, `default_currency`; password error message made language-neutral.
 - **Shared exports:** `currency` and `phone` modules exported from `packages/shared`; `phone` uses `COUNTRY_LA`/`COUNTRY_TH` from `currency` to avoid duplicate exports.
 - **Unused import removed:** `channelTypeSchema` import removed from `schemas/customer-identity.ts` (fixes build).
 
 ### Tests
+
 - **packages/shared:** `currency.test.ts` (getDefaultCurrencyForCountry, getMerchantDefaultCurrency, formatMoney, parseMoneyInput) and `phone.test.ts` (normalizePhone, normalizePhoneByCountry for LA/TH/generic). All new tests pass.
 
 ---
@@ -166,12 +186,12 @@ This document summarizes the in-place refactor applied to make the ArmAI platfor
 
 ## 3. Files Touched
 
-| Area | Files |
-|------|--------|
-| **SQL** | `sql/078_merchant_defaults.sql` (new) |
-| **Shared** | `packages/shared/src/currency.ts` (new), `packages/shared/src/phone.ts` (new), `packages/shared/src/index.ts`, `packages/shared/src/types.ts`, `packages/shared/src/schemas/merchant.ts`, `packages/shared/src/schemas/customer-identity.ts`, `packages/shared/src/currency.test.ts` (new), `packages/shared/src/phone.test.ts` (new) |
-| **API** | `apps/api/src/services/merchant.ts`, `apps/api/src/services/catalog.ts`, `apps/api/src/services/payment-accounts.ts`, `apps/api/src/services/billing.ts`, `apps/api/src/services/order-detail.ts`, `apps/api/src/services/customer-identity.ts`, `apps/api/src/services/conversation-router.ts`, `apps/api/src/services/whatsapp-webhook.ts`, `apps/api/src/routes/super/index.ts`, `apps/api/src/routes/merchant/index.ts`, `apps/api/src/routes/merchant/customers.ts` |
-| **Web** | `apps/web/src/theme.ts`, `apps/web/src/lib/api.ts`, `apps/web/src/pages/merchant/MerchantProducts.tsx`, `apps/web/src/pages/merchant/MerchantPaymentAccounts.tsx`, `apps/web/src/pages/super/SuperMerchants.tsx`, `apps/web/src/components/ui/index.ts`, `apps/web/src/components/ui/FormSection.tsx` (new), `apps/web/src/components/ui/DataTableShell.tsx` (new) |
+| Area       | Files                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **SQL**    | `sql/078_merchant_defaults.sql` (new)                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| **Shared** | `packages/shared/src/currency.ts` (new), `packages/shared/src/phone.ts` (new), `packages/shared/src/index.ts`, `packages/shared/src/types.ts`, `packages/shared/src/schemas/merchant.ts`, `packages/shared/src/schemas/customer-identity.ts`, `packages/shared/src/currency.test.ts` (new), `packages/shared/src/phone.test.ts` (new)                                                                                                                                    |
+| **API**    | `apps/api/src/services/merchant.ts`, `apps/api/src/services/catalog.ts`, `apps/api/src/services/payment-accounts.ts`, `apps/api/src/services/billing.ts`, `apps/api/src/services/order-detail.ts`, `apps/api/src/services/customer-identity.ts`, `apps/api/src/services/conversation-router.ts`, `apps/api/src/services/whatsapp-webhook.ts`, `apps/api/src/routes/super/index.ts`, `apps/api/src/routes/merchant/index.ts`, `apps/api/src/routes/merchant/customers.ts` |
+| **Web**    | `apps/web/src/theme.ts`, `apps/web/src/lib/api.ts`, `apps/web/src/pages/merchant/MerchantProducts.tsx`, `apps/web/src/pages/merchant/MerchantPaymentAccounts.tsx`, `apps/web/src/pages/super/SuperMerchants.tsx`, `apps/web/src/components/ui/index.ts`, `apps/web/src/components/ui/FormSection.tsx` (new), `apps/web/src/components/ui/DataTableShell.tsx` (new)                                                                                                       |
 
 ---
 

@@ -1,6 +1,6 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
-import type { SlipExtraction } from '@armai/shared';
-import { ORDER_STATUS } from '@armai/shared';
+import type { SupabaseClient } from '@supabase/supabase-js'
+import type { SlipExtraction } from '@armai/shared'
+import { ORDER_STATUS } from '@armai/shared'
 
 /**
  * Save slip extraction to order_slips and set order status to slip_extracted (staged; not paid).
@@ -8,10 +8,10 @@ import { ORDER_STATUS } from '@armai/shared';
 export async function saveSlipExtraction(
   supabase: SupabaseClient,
   payload: {
-    merchantId: string;
-    orderId: string;
-    r2Key: string | null;
-    extraction: SlipExtraction;
+    merchantId: string
+    orderId: string
+    r2Key: string | null
+    extraction: SlipExtraction
   }
 ) {
   const { error: slipErr } = await supabase.from('order_slips').insert({
@@ -27,11 +27,11 @@ export async function saveSlipExtraction(
     detected_receiver_account: payload.extraction.receiver_account ?? null,
     detected_receiver_bank: payload.extraction.receiver_bank ?? null,
     detected_receiver_name: payload.extraction.receiver_name ?? null,
-  });
-  if (slipErr) throw new Error(slipErr.message);
+  })
+  if (slipErr) throw new Error(slipErr.message)
   await supabase
     .from('orders')
     .update({ status: ORDER_STATUS.SLIP_EXTRACTED, updated_at: new Date().toISOString() })
     .eq('id', payload.orderId)
-    .eq('merchant_id', payload.merchantId);
+    .eq('merchant_id', payload.merchantId)
 }

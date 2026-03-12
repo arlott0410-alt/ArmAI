@@ -1,11 +1,11 @@
-import { z } from 'zod';
+import { z } from 'zod'
 
 /** Facebook webhook query (verification). */
 export const facebookWebhookQuerySchema = z.object({
   'hub.mode': z.literal('subscribe').optional(),
   'hub.verify_token': z.string().optional(),
   'hub.challenge': z.string().optional(),
-});
+})
 
 /** Facebook webhook body (events). */
 export const facebookWebhookBodySchema = z.object({
@@ -43,6 +43,6 @@ export const facebookWebhookBodySchema = z.object({
       })
     )
     .optional(),
-});
+})
 
-export type FacebookWebhookBody = z.infer<typeof facebookWebhookBodySchema>;
+export type FacebookWebhookBody = z.infer<typeof facebookWebhookBodySchema>

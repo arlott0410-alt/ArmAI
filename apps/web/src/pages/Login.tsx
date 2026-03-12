@@ -1,54 +1,92 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { theme } from '../theme';
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
+import { theme } from '../theme'
 
 export default function Login() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const { signIn, user } = useAuth();
-  const navigate = useNavigate();
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+  const { signIn, user } = useAuth()
+  const navigate = useNavigate()
 
   useEffect(() => {
     if (user) {
-      const to = user.role === 'super_admin' ? '/super/dashboard' : '/merchant/dashboard';
-      navigate(to, { replace: true });
+      const to = user.role === 'super_admin' ? '/super/dashboard' : '/merchant/dashboard'
+      navigate(to, { replace: true })
     }
-  }, [user, navigate]);
+  }, [user, navigate])
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setLoading(true);
+    e.preventDefault()
+    setError(null)
+    setLoading(true)
     try {
-      await signIn(email, password);
+      await signIn(email, password)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
+      setError(err instanceof Error ? err.message : 'Login failed')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   return (
-    <div style={{ minHeight: '100vh', background: theme.background, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-      <div style={{
-        maxWidth: 400,
-        width: '100%',
-        padding: 32,
-        background: theme.surface,
-        borderRadius: 12,
-        border: `1px solid ${theme.borderMuted}`,
-      }}>
+    <div
+      style={{
+        minHeight: '100vh',
+        background: theme.background,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 24,
+      }}
+    >
+      <div
+        style={{
+          maxWidth: 400,
+          width: '100%',
+          padding: 32,
+          background: theme.surface,
+          borderRadius: 12,
+          border: `1px solid ${theme.borderMuted}`,
+        }}
+      >
         <div style={{ marginBottom: 8 }}>
-          <span style={{ fontSize: 24, fontWeight: 700, color: theme.text, letterSpacing: '-0.02em' }}>ArmAI</span>
-          <span style={{ fontSize: 11, color: theme.primary, marginLeft: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Platform</span>
+          <span
+            style={{ fontSize: 24, fontWeight: 700, color: theme.text, letterSpacing: '-0.02em' }}
+          >
+            ArmAI
+          </span>
+          <span
+            style={{
+              fontSize: 11,
+              color: theme.primary,
+              marginLeft: 8,
+              fontWeight: 600,
+              textTransform: 'uppercase',
+              letterSpacing: '0.1em',
+            }}
+          >
+            Platform
+          </span>
         </div>
-        <p style={{ color: theme.textSecondary, marginBottom: 28, fontSize: 14 }}>Sign in to continue.</p>
+        <p style={{ color: theme.textSecondary, marginBottom: 28, fontSize: 14 }}>
+          Sign in to continue.
+        </p>
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: 16 }}>
-            <label style={{ display: 'block', marginBottom: 6, fontWeight: 500, color: theme.textSecondary, fontSize: 13 }}>Email</label>
+            <label
+              style={{
+                display: 'block',
+                marginBottom: 6,
+                fontWeight: 500,
+                color: theme.textSecondary,
+                fontSize: 13,
+              }}
+            >
+              Email
+            </label>
             <input
               type="email"
               value={email}
@@ -58,7 +96,17 @@ export default function Login() {
             />
           </div>
           <div style={{ marginBottom: 24 }}>
-            <label style={{ display: 'block', marginBottom: 6, fontWeight: 500, color: theme.textSecondary, fontSize: 13 }}>Password</label>
+            <label
+              style={{
+                display: 'block',
+                marginBottom: 6,
+                fontWeight: 500,
+                color: theme.textSecondary,
+                fontSize: 13,
+              }}
+            >
+              Password
+            </label>
             <input
               type="password"
               value={password}
@@ -87,5 +135,5 @@ export default function Login() {
         </form>
       </div>
     </div>
-  );
+  )
 }

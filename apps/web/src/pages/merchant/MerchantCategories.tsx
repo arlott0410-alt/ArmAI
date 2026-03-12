@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useState } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
-import { categoriesApi, type CategoryRow, type CreateCategoryBody } from '../../lib/api';
-import { PageShell, Card, CardBody, EmptyState } from '../../components/ui';
-import { FormModal, SaveCancelFooter, FieldGroup } from '../../components/merchant';
-import { theme } from '../../theme';
+import { useCallback, useEffect, useState } from 'react'
+import { useAuth } from '../../contexts/AuthContext'
+import { categoriesApi, type CategoryRow, type CreateCategoryBody } from '../../lib/api'
+import { PageShell, Card, CardBody, EmptyState } from '../../components/ui'
+import { FormModal, SaveCancelFooter, FieldGroup } from '../../components/merchant'
+import { theme } from '../../theme'
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
@@ -13,92 +13,93 @@ const inputStyle: React.CSSProperties = {
   borderRadius: 6,
   color: theme.text,
   fontSize: 13,
-};
+}
 
 export default function MerchantCategories() {
-  const { user } = useAuth();
-  const token = user?.accessToken ?? null;
+  const { user } = useAuth()
+  const token = user?.accessToken ?? null
 
-  const [categories, setCategories] = useState<CategoryRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editing, setEditing] = useState<CategoryRow | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [formError, setFormError] = useState<string | null>(null);
+  const [categories, setCategories] = useState<CategoryRow[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [modalOpen, setModalOpen] = useState(false)
+  const [editing, setEditing] = useState<CategoryRow | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
 
   const [form, setForm] = useState<CreateCategoryBody>({
     name: '',
     description: null,
     sort_order: 0,
     is_active: true,
-  });
+  })
 
   const load = useCallback(() => {
-    if (!token) return;
-    setLoading(true);
-    setError(null);
+    if (!token) return
+    setLoading(true)
+    setError(null)
     categoriesApi
       .list(token, { activeOnly: false })
       .then((r) => setCategories(r.categories))
       .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
-  }, [token]);
+      .finally(() => setLoading(false))
+  }, [token])
 
   useEffect(() => {
-    load();
-  }, [load]);
+    load()
+  }, [load])
 
   const openCreate = () => {
-    setEditing(null);
-    setForm({ name: '', description: null, sort_order: 0, is_active: true });
-    setFormError(null);
-    setModalOpen(true);
-  };
+    setEditing(null)
+    setForm({ name: '', description: null, sort_order: 0, is_active: true })
+    setFormError(null)
+    setModalOpen(true)
+  }
 
   const openEdit = (c: CategoryRow) => {
-    setEditing(c);
+    setEditing(c)
     setForm({
       name: c.name,
       description: c.description ?? null,
       sort_order: c.sort_order ?? 0,
       is_active: c.is_active,
-    });
-    setFormError(null);
-    setModalOpen(true);
-  };
+    })
+    setFormError(null)
+    setModalOpen(true)
+  }
 
   const closeModal = () => {
-    setModalOpen(false);
-    setEditing(null);
-    setFormError(null);
-  };
+    setModalOpen(false)
+    setEditing(null)
+    setFormError(null)
+  }
 
   const handleSave = async () => {
-    setFormError(null);
+    setFormError(null)
     if (!form.name.trim()) {
-      setFormError('Name is required.');
-      return;
+      setFormError('Name is required.')
+      return
     }
-    if (!token) return;
-    setSaving(true);
+    if (!token) return
+    setSaving(true)
     try {
       if (editing) {
-        await categoriesApi.update(token, editing.id, form);
+        await categoriesApi.update(token, editing.id, form)
       } else {
-        await categoriesApi.create(token, form);
+        await categoriesApi.create(token, form)
       }
-      closeModal();
-      load();
+      closeModal()
+      load()
     } catch (e) {
-      setFormError(e instanceof Error ? e.message : 'Save failed');
+      setFormError(e instanceof Error ? e.message : 'Save failed')
     } finally {
-      setSaving(false);
+      setSaving(false)
     }
-  };
+  }
 
-  if (error) return <p style={{ color: theme.danger }}>{error}</p>;
-  if (loading && categories.length === 0) return <p style={{ color: theme.textSecondary }}>Loading…</p>;
+  if (error) return <p style={{ color: theme.danger }}>{error}</p>
+  if (loading && categories.length === 0)
+    return <p style={{ color: theme.textSecondary }}>Loading…</p>
 
   return (
     <PageShell
@@ -152,17 +153,58 @@ export default function MerchantCategories() {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
                 <tr style={{ textAlign: 'left', borderBottom: `1px solid ${theme.borderMuted}` }}>
-                  <th style={{ padding: '12px 16px', color: theme.textMuted, fontWeight: 600, fontSize: 11, textTransform: 'uppercase' }}>Name</th>
-                  <th style={{ padding: '12px 16px', color: theme.textMuted, fontWeight: 600, fontSize: 11, textTransform: 'uppercase' }}>Order</th>
-                  <th style={{ padding: '12px 16px', color: theme.textMuted, fontWeight: 600, fontSize: 11, textTransform: 'uppercase' }}>Active</th>
-                  <th style={{ padding: '12px 16px', color: theme.textMuted, fontWeight: 600, fontSize: 11, textTransform: 'uppercase', width: 80 }}></th>
+                  <th
+                    style={{
+                      padding: '12px 16px',
+                      color: theme.textMuted,
+                      fontWeight: 600,
+                      fontSize: 11,
+                      textTransform: 'uppercase',
+                    }}
+                  >
+                    Name
+                  </th>
+                  <th
+                    style={{
+                      padding: '12px 16px',
+                      color: theme.textMuted,
+                      fontWeight: 600,
+                      fontSize: 11,
+                      textTransform: 'uppercase',
+                    }}
+                  >
+                    Order
+                  </th>
+                  <th
+                    style={{
+                      padding: '12px 16px',
+                      color: theme.textMuted,
+                      fontWeight: 600,
+                      fontSize: 11,
+                      textTransform: 'uppercase',
+                    }}
+                  >
+                    Active
+                  </th>
+                  <th
+                    style={{
+                      padding: '12px 16px',
+                      color: theme.textMuted,
+                      fontWeight: 600,
+                      fontSize: 11,
+                      textTransform: 'uppercase',
+                      width: 80,
+                    }}
+                  ></th>
                 </tr>
               </thead>
               <tbody>
                 {categories.map((c) => (
                   <tr key={c.id} style={{ borderBottom: `1px solid ${theme.borderMuted}` }}>
                     <td style={{ padding: '12px 16px', fontWeight: 500 }}>{c.name}</td>
-                    <td style={{ padding: '12px 16px', color: theme.textSecondary }}>{c.sort_order}</td>
+                    <td style={{ padding: '12px 16px', color: theme.textSecondary }}>
+                      {c.sort_order}
+                    </td>
                     <td style={{ padding: '12px 16px' }}>{c.is_active ? 'Yes' : 'No'}</td>
                     <td style={{ padding: '12px 16px' }}>
                       <button
@@ -192,9 +234,18 @@ export default function MerchantCategories() {
         open={modalOpen}
         onClose={closeModal}
         title={editing ? 'Edit category' : 'Create category'}
-        footer={<SaveCancelFooter onCancel={closeModal} onSave={handleSave} saving={saving} saveLabel={editing ? 'Update' : 'Create'} />}
+        footer={
+          <SaveCancelFooter
+            onCancel={closeModal}
+            onSave={handleSave}
+            saving={saving}
+            saveLabel={editing ? 'Update' : 'Create'}
+          />
+        }
       >
-        {formError && <p style={{ color: theme.danger, marginBottom: 12, fontSize: 13 }}>{formError}</p>}
+        {formError && (
+          <p style={{ color: theme.danger, marginBottom: 12, fontSize: 13 }}>{formError}</p>
+        )}
         <FieldGroup label="Name" hint="Required.">
           <input
             type="text"
@@ -232,5 +283,5 @@ export default function MerchantCategories() {
         </FieldGroup>
       </FormModal>
     </PageShell>
-  );
+  )
 }

@@ -1,13 +1,13 @@
 /**
  * Matching logic tests - pure functions only; no Supabase.
  */
-import { describe, it, expect } from 'vitest';
-import { computeMatchScore, classifyMatchOutcome } from '@armai/shared';
-import type { SlipExtraction } from '@armai/shared';
-import type { BankTransactionNormalized } from '@armai/shared';
+import { describe, it, expect } from 'vitest'
+import { computeMatchScore, classifyMatchOutcome } from '@armai/shared'
+import type { SlipExtraction } from '@armai/shared'
+import type { BankTransactionNormalized } from '@armai/shared'
 
 describe('matching score and outcome', () => {
-  it('high score yields auto_matched', () => {
+  it('perfect match (same time, amount, sender, reference) yields auto_matched', () => {
     const slip: SlipExtraction = {
       amount: 500,
       sender_name: 'Alice',
@@ -15,16 +15,38 @@ describe('matching score and outcome', () => {
       reference_code: 'ORD-001',
       confidence_score: 0.95,
       raw_json: '{}',
-    };
+    }
     const bank: BankTransactionNormalized = {
       amount: 500,
       sender_name: 'Alice',
-      datetime: '2024-01-15T14:02:00Z',
+      datetime: '2024-01-15T14:00:00Z', // same time so timeScore = 1
       reference_code: 'ORD-001',
       bank_tx_id: null,
       raw_parser_id: 'p',
-    };
-    const factors = computeMatchScore(slip, bank);
-    expect(classifyMatchOutcome(factors.totalScore)).toBe('auto_matched');
-  });
-});
+    }
+    const factors = computeMatchScore(slip, bank)
+    expect(factors.totalScore).toBeGreaterThanOrEqual(0.9)
+    expect(classifyMatchOutcome(factors.totalScore)).toBe('auto_matched')
+  })
+
+  it('high but not perfect score yields probable_match', () => {
+    const slip: SlipExtraction = {
+      amount: 500,
+      sender_name: 'Alice',
+      datetime: '2024-01-15T14:00:00Z',
+      reference_code: 'ORD-001',
+      confidence_score: 0.95,
+      raw_json: '{}',
+    }
+    const bank: BankTransactionNormalized = {
+      amount: 500,
+      sender_name: 'Alice',
+      datetime: '2024-01-15T14:02:00Z', // a few min later
+      reference_code: 'ORD-001',
+      bank_tx_id: null,
+      raw_parser_id: 'p',
+    }
+    const factors = computeMatchScore(slip, bank)
+    expect(classifyMatchOutcome(factors.totalScore)).toBe('probable_match')
+  })
+})

@@ -1,37 +1,44 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
-import { useAuth } from './contexts/AuthContext';
+import { Routes, Route, Navigate } from 'react-router-dom'
+import { useAuth } from './contexts/AuthContext'
 
-import Login from './pages/Login';
-import SuperLayout from './layouts/SuperLayout';
-import MerchantLayout from './layouts/MerchantLayout';
-import SuperDashboard from './pages/super/SuperDashboard';
-import SuperMerchants from './pages/super/SuperMerchants';
-import SuperMerchantDetail from './pages/super/SuperMerchantDetail';
-import SuperBilling from './pages/super/SuperBilling';
-import SuperSupport from './pages/super/SuperSupport';
-import SuperAudit from './pages/super/SuperAudit';
-import MerchantDashboard from './pages/merchant/MerchantDashboard';
-import MerchantOrders from './pages/merchant/MerchantOrders';
-import MerchantBankSync from './pages/merchant/MerchantBankSync';
-import MerchantSettings from './pages/merchant/MerchantSettings';
-import MerchantProducts from './pages/merchant/MerchantProducts';
-import MerchantCategories from './pages/merchant/MerchantCategories';
-import MerchantKnowledge from './pages/merchant/MerchantKnowledge';
-import MerchantPromotions from './pages/merchant/MerchantPromotions';
-import MerchantPaymentAccounts from './pages/merchant/MerchantPaymentAccounts';
-import MerchantOrderDetail from './pages/merchant/MerchantOrderDetail';
-import MerchantTelegram from './pages/merchant/MerchantTelegram';
-import MerchantChannels from './pages/merchant/MerchantChannels';
-import MerchantCustomers from './pages/merchant/MerchantCustomers';
-import MerchantCustomerDetail from './pages/merchant/MerchantCustomerDetail';
-import MerchantOperationsFeed from './pages/merchant/MerchantOperationsFeed';
+import Login from './pages/Login'
+import SuperLayout from './layouts/SuperLayout'
+import MerchantLayout from './layouts/MerchantLayout'
+import SuperDashboard from './pages/super/SuperDashboard'
+import SuperMerchants from './pages/super/SuperMerchants'
+import SuperMerchantDetail from './pages/super/SuperMerchantDetail'
+import SuperBilling from './pages/super/SuperBilling'
+import SuperSupport from './pages/super/SuperSupport'
+import SuperAudit from './pages/super/SuperAudit'
+import MerchantDashboard from './pages/merchant/MerchantDashboard'
+import MerchantOrders from './pages/merchant/MerchantOrders'
+import MerchantBankSync from './pages/merchant/MerchantBankSync'
+import MerchantSettings from './pages/merchant/MerchantSettings'
+import MerchantProducts from './pages/merchant/MerchantProducts'
+import MerchantCategories from './pages/merchant/MerchantCategories'
+import MerchantKnowledge from './pages/merchant/MerchantKnowledge'
+import MerchantPromotions from './pages/merchant/MerchantPromotions'
+import MerchantPaymentAccounts from './pages/merchant/MerchantPaymentAccounts'
+import MerchantOrderDetail from './pages/merchant/MerchantOrderDetail'
+import MerchantTelegram from './pages/merchant/MerchantTelegram'
+import MerchantChannels from './pages/merchant/MerchantChannels'
+import MerchantCustomers from './pages/merchant/MerchantCustomers'
+import MerchantCustomerDetail from './pages/merchant/MerchantCustomerDetail'
+import MerchantOperationsFeed from './pages/merchant/MerchantOperationsFeed'
 
-function ProtectedRoute({ children, requireSuper }: { children: React.ReactNode; requireSuper?: boolean }) {
-  const { user, loading } = useAuth();
-  if (loading) return <div style={{ padding: 24 }}>Loading...</div>;
-  if (!user) return <Navigate to="/login" replace />;
-  if (requireSuper && user.role !== 'super_admin') return <Navigate to="/merchant/dashboard" replace />;
-  return <>{children}</>;
+function ProtectedRoute({
+  children,
+  requireSuper,
+}: {
+  children: React.ReactNode
+  requireSuper?: boolean
+}) {
+  const { user, loading } = useAuth()
+  if (loading) return <div style={{ padding: 24 }}>Loading...</div>
+  if (!user) return <Navigate to="/login" replace />
+  if (requireSuper && user.role !== 'super_admin')
+    return <Navigate to="/merchant/dashboard" replace />
+  return <>{children}</>
 }
 
 export default function App() {
@@ -82,5 +89,5 @@ export default function App() {
       <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
-  );
+  )
 }

@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
-import { merchantApi, bankSyncSetupApi, paymentAccountsApi } from '../../lib/api';
+import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { useAuth } from '../../contexts/AuthContext'
+import { merchantApi, bankSyncSetupApi, paymentAccountsApi } from '../../lib/api'
 import type {
   BankSyncSetupSummary,
   BankSyncHealthStatus,
@@ -10,8 +10,8 @@ import type {
   PaymentAccountRow,
   BankScopingMode,
   ScopingStatus,
-} from '../../lib/api';
-import type { BankSyncTestResult } from '../../lib/api';
+} from '../../lib/api'
+import type { BankSyncTestResult } from '../../lib/api'
 import {
   PageShell,
   Section,
@@ -25,13 +25,13 @@ import {
   IntegrationOverviewCard,
   InlineInstructionList,
   ActionFooter,
-} from '../../components/ui';
-import { theme } from '../../theme';
+} from '../../components/ui'
+import { theme } from '../../theme'
 
 function formatDate(s: string | null): string {
-  if (!s) return '—';
-  const d = new Date(s);
-  return isNaN(d.getTime()) ? '—' : d.toLocaleString();
+  if (!s) return '—'
+  const d = new Date(s)
+  return isNaN(d.getTime()) ? '—' : d.toLocaleString()
 }
 
 const INSTRUCTION_STEPS = [
@@ -40,76 +40,76 @@ const INSTRUCTION_STEPS = [
   'Paste the verification token.',
   'Save the connection.',
   'Return here and run test connection.',
-];
+]
 
 export default function MerchantBankSync() {
-  const { user } = useAuth();
-  const token = user?.accessToken ?? null;
+  const { user } = useAuth()
+  const token = user?.accessToken ?? null
 
-  const [summary, setSummary] = useState<BankSyncSetupSummary | null>(null);
-  const [bankTransactions, setBankTransactions] = useState<BankTransactionRow[]>([]);
-  const [matchingResults, setMatchingResults] = useState<MatchingResultRow[]>([]);
-  const [paymentAccounts, setPaymentAccounts] = useState<PaymentAccountRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [saveError, setSaveError] = useState<string | null>(null);
-  const [testResult, setTestResult] = useState<BankSyncTestResult | null>(null);
-  const [testing, setTesting] = useState(false);
-  const [regenerating, setRegenerating] = useState(false);
-  const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
-  const [showRegenerateModal, setShowRegenerateModal] = useState(false);
-  const [samplePayloadText, setSamplePayloadText] = useState('');
-  const [parseTestResult, setParseTestResult] = useState<BankSyncTestResult | null>(null);
-  const [parseTesting, setParseTesting] = useState(false);
+  const [summary, setSummary] = useState<BankSyncSetupSummary | null>(null)
+  const [bankTransactions, setBankTransactions] = useState<BankTransactionRow[]>([])
+  const [matchingResults, setMatchingResults] = useState<MatchingResultRow[]>([])
+  const [paymentAccounts, setPaymentAccounts] = useState<PaymentAccountRow[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const [testResult, setTestResult] = useState<BankSyncTestResult | null>(null)
+  const [testing, setTesting] = useState(false)
+  const [regenerating, setRegenerating] = useState(false)
+  const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1)
+  const [showRegenerateModal, setShowRegenerateModal] = useState(false)
+  const [samplePayloadText, setSamplePayloadText] = useState('')
+  const [parseTestResult, setParseTestResult] = useState<BankSyncTestResult | null>(null)
+  const [parseTesting, setParseTesting] = useState(false)
 
   const load = () => {
-    if (!token) return;
-    setError(null);
+    if (!token) return
+    setError(null)
     Promise.all([
       bankSyncSetupApi.getSetup(token),
       merchantApi.bankSync(token, 50),
       paymentAccountsApi.list(token, { activeOnly: true }),
     ])
       .then(([s, sync, accounts]) => {
-        setSummary(s);
-        setBankTransactions(sync.bankTransactions ?? []);
-        setMatchingResults(sync.matchingResults ?? []);
-        setPaymentAccounts(accounts.paymentAccounts ?? []);
-        if (s.step1_complete && s.step2_ready) setCurrentStep(3);
-        else if (s.step1_complete) setCurrentStep(2);
-        else setCurrentStep(1);
+        setSummary(s)
+        setBankTransactions(sync.bankTransactions ?? [])
+        setMatchingResults(sync.matchingResults ?? [])
+        setPaymentAccounts(accounts.paymentAccounts ?? [])
+        if (s.step1_complete && s.step2_ready) setCurrentStep(3)
+        else if (s.step1_complete) setCurrentStep(2)
+        else setCurrentStep(1)
       })
       .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
-  };
+      .finally(() => setLoading(false))
+  }
 
   useEffect(() => {
-    load();
-  }, [token]);
+    load()
+  }, [token])
 
-  const healthStatus: BankSyncHealthStatus = summary?.health_status ?? 'needs_setup';
+  const healthStatus: BankSyncHealthStatus = summary?.health_status ?? 'needs_setup'
 
   const handleSave = async (payload: Parameters<typeof bankSyncSetupApi.updateSetup>[1]) => {
-    if (!token) return;
-    setSaveError(null);
+    if (!token) return
+    setSaveError(null)
     try {
-      await bankSyncSetupApi.updateSetup(token, payload);
-      const s = await bankSyncSetupApi.getSetup(token);
-      setSummary(s);
+      await bankSyncSetupApi.updateSetup(token, payload)
+      const s = await bankSyncSetupApi.getSetup(token)
+      setSummary(s)
     } catch (e) {
-      setSaveError(e instanceof Error ? e.message : 'Failed to save');
+      setSaveError(e instanceof Error ? e.message : 'Failed to save')
     }
-  };
+  }
 
   const handleTest = async () => {
-    if (!token) return;
-    setTesting(true);
-    setTestResult(null);
+    if (!token) return
+    setTesting(true)
+    setTestResult(null)
     try {
-      const result = await bankSyncSetupApi.testConnection(token);
-      setTestResult(result);
-      const s = await bankSyncSetupApi.getSetup(token);
-      setSummary(s);
+      const result = await bankSyncSetupApi.testConnection(token)
+      setTestResult(result)
+      const s = await bankSyncSetupApi.getSetup(token)
+      setSummary(s)
     } catch (e) {
       setTestResult({
         success: false,
@@ -117,43 +117,49 @@ export default function MerchantBankSync() {
         message: e instanceof Error ? e.message : 'Test failed',
         parser_ready: false,
         last_tested_at: new Date().toISOString(),
-      });
+      })
     } finally {
-      setTesting(false);
+      setTesting(false)
     }
-  };
+  }
 
   const handleRegenerateToken = async () => {
-    if (!token) return;
-    setShowRegenerateModal(false);
-    setRegenerating(true);
+    if (!token) return
+    setShowRegenerateModal(false)
+    setRegenerating(true)
     try {
-      const res = await bankSyncSetupApi.regenerateToken(token);
-      const s = await bankSyncSetupApi.getSetup(token);
-      setSummary({ ...s, webhook_verify_token: res.webhook_verify_token });
+      const res = await bankSyncSetupApi.regenerateToken(token)
+      const s = await bankSyncSetupApi.getSetup(token)
+      setSummary({ ...s, webhook_verify_token: res.webhook_verify_token })
     } finally {
-      setRegenerating(false);
+      setRegenerating(false)
     }
-  };
+  }
 
   if (error) {
     return (
-      <PageShell title="Bank Sync" description="Connect your bank notification source to detect incoming payments automatically">
+      <PageShell
+        title="Bank Sync"
+        description="Connect your bank notification source to detect incoming payments automatically"
+      >
         <p style={{ color: theme.danger }}>{error}</p>
       </PageShell>
-    );
+    )
   }
   if (loading) {
     return (
-      <PageShell title="Bank Sync" description="Connect your bank notification source to detect incoming payments automatically">
+      <PageShell
+        title="Bank Sync"
+        description="Connect your bank notification source to detect incoming payments automatically"
+      >
         <p style={{ color: theme.textSecondary }}>Loading…</p>
       </PageShell>
-    );
+    )
   }
 
-  const webhookUrl = summary?.webhook_url ?? '';
-  const step1Complete = summary?.step1_complete ?? false;
-  const step2Ready = summary?.step2_ready ?? false;
+  const webhookUrl = summary?.webhook_url ?? ''
+  const step1Complete = summary?.step1_complete ?? false
+  const step2Ready = summary?.step2_ready ?? false
 
   return (
     <PageShell
@@ -167,7 +173,16 @@ export default function MerchantBankSync() {
 
         {/* Wizard progress */}
         <div>
-          <div style={{ marginBottom: 12, fontSize: 12, fontWeight: 600, color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          <div
+            style={{
+              marginBottom: 12,
+              fontSize: 12,
+              fontWeight: 600,
+              color: theme.textMuted,
+              textTransform: 'uppercase',
+              letterSpacing: '0.04em',
+            }}
+          >
             Setup wizard
           </div>
           <SetupProgressBar
@@ -185,29 +200,40 @@ export default function MerchantBankSync() {
           isActive={currentStep === 1}
           isComplete={step1Complete}
           isDisabled={currentStep > 1 && !step1Complete}
-          action={currentStep > 1 && step1Complete && (
-            <button
-              type="button"
-              onClick={() => setCurrentStep(1)}
-              style={{
-                padding: '6px 12px',
-                background: 'transparent',
-                border: `1px solid ${theme.borderMuted}`,
-                borderRadius: 4,
-                color: theme.textSecondary,
-                fontSize: 12,
-                cursor: 'pointer',
-              }}
-            >
-              Edit
-            </button>
-          )}
+          action={
+            currentStep > 1 &&
+            step1Complete && (
+              <button
+                type="button"
+                onClick={() => setCurrentStep(1)}
+                style={{
+                  padding: '6px 12px',
+                  background: 'transparent',
+                  border: `1px solid ${theme.borderMuted}`,
+                  borderRadius: 4,
+                  color: theme.textSecondary,
+                  fontSize: 12,
+                  cursor: 'pointer',
+                }}
+              >
+                Edit
+              </button>
+            )
+          }
         >
           {currentStep === 1 && (
             <>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 <div>
-                  <label style={{ display: 'block', marginBottom: 6, fontSize: 12, fontWeight: 500, color: theme.textSecondary }}>
+                  <label
+                    style={{
+                      display: 'block',
+                      marginBottom: 6,
+                      fontSize: 12,
+                      fontWeight: 500,
+                      color: theme.textSecondary,
+                    }}
+                  >
                     Bank <span style={{ color: theme.danger }}>*</span>
                   </label>
                   <select
@@ -225,13 +251,25 @@ export default function MerchantBankSync() {
                     }}
                   >
                     {(summary?.bank_options ?? []).map((opt) => (
-                      <option key={opt.code} value={opt.code}>{opt.label}</option>
+                      <option key={opt.code} value={opt.code}>
+                        {opt.label}
+                      </option>
                     ))}
                   </select>
-                  <p style={{ fontSize: 11, color: theme.textMuted, marginTop: 4 }}>Select the bank that sends you notifications.</p>
+                  <p style={{ fontSize: 11, color: theme.textMuted, marginTop: 4 }}>
+                    Select the bank that sends you notifications.
+                  </p>
                 </div>
                 <div>
-                  <label style={{ display: 'block', marginBottom: 6, fontSize: 12, fontWeight: 500, color: theme.textSecondary }}>
+                  <label
+                    style={{
+                      display: 'block',
+                      marginBottom: 6,
+                      fontSize: 12,
+                      fontWeight: 500,
+                      color: theme.textSecondary,
+                    }}
+                  >
                     Linked payment account
                   </label>
                   <select
@@ -251,28 +289,46 @@ export default function MerchantBankSync() {
                     <option value="">None</option>
                     {paymentAccounts.map((acc) => (
                       <option key={acc.id} value={acc.id}>
-                        {acc.bank_code} ••••{acc.account_number.slice(-4)} — {acc.account_holder_name}
+                        {acc.bank_code} ••••{acc.account_number.slice(-4)} —{' '}
+                        {acc.account_holder_name}
                         {acc.is_primary ? ' (Primary)' : ''}
                       </option>
                     ))}
                   </select>
-                  <p style={{ fontSize: 11, color: theme.textMuted, marginTop: 4 }}>Strongly recommended for correct matching.</p>
+                  <p style={{ fontSize: 11, color: theme.textMuted, marginTop: 4 }}>
+                    Strongly recommended for correct matching.
+                  </p>
                   {paymentAccounts.length === 0 && (
                     <p style={{ fontSize: 12, color: theme.warning, marginTop: 8 }}>
                       No payment accounts yet.{' '}
-                      <Link to="/merchant/payment-accounts" style={{ color: theme.primary }}>Add one</Link> to link here.
+                      <Link to="/merchant/payment-accounts" style={{ color: theme.primary }}>
+                        Add one
+                      </Link>{' '}
+                      to link here.
                     </p>
                   )}
                 </div>
                 <div>
-                  <label style={{ display: 'block', marginBottom: 6, fontSize: 12, fontWeight: 500, color: theme.textSecondary }}>
+                  <label
+                    style={{
+                      display: 'block',
+                      marginBottom: 6,
+                      fontSize: 12,
+                      fontWeight: 500,
+                      color: theme.textSecondary,
+                    }}
+                  >
                     Connection label (optional)
                   </label>
                   <input
                     type="text"
                     value={summary?.device_label ?? ''}
-                    onChange={(e) => setSummary((s) => (s ? { ...s, device_label: e.target.value } : null))}
-                    onBlur={() => handleSave({ device_label: summary?.device_label?.trim() || null })}
+                    onChange={(e) =>
+                      setSummary((s) => (s ? { ...s, device_label: e.target.value } : null))
+                    }
+                    onBlur={() =>
+                      handleSave({ device_label: summary?.device_label?.trim() || null })
+                    }
                     placeholder="e.g. Main phone"
                     style={{
                       width: '100%',
@@ -287,7 +343,15 @@ export default function MerchantBankSync() {
                   />
                 </div>
                 <div>
-                  <label style={{ display: 'block', marginBottom: 6, fontSize: 12, fontWeight: 500, color: theme.textSecondary }}>
+                  <label
+                    style={{
+                      display: 'block',
+                      marginBottom: 6,
+                      fontSize: 12,
+                      fontWeight: 500,
+                      color: theme.textSecondary,
+                    }}
+                  >
                     Match mode
                   </label>
                   <select
@@ -307,7 +371,9 @@ export default function MerchantBankSync() {
                     <option value="strict">Strict — require account/suffix match</option>
                     <option value="relaxed">Relaxed — allow device + name hints</option>
                   </select>
-                  <p style={{ fontSize: 11, color: theme.textMuted, marginTop: 4 }}>Strict is recommended for multiple accounts in one app (e.g. BCEL One).</p>
+                  <p style={{ fontSize: 11, color: theme.textMuted, marginTop: 4 }}>
+                    Strict is recommended for multiple accounts in one app (e.g. BCEL One).
+                  </p>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <input
@@ -316,7 +382,9 @@ export default function MerchantBankSync() {
                     checked={summary?.is_active ?? false}
                     onChange={(e) => handleSave({ is_active: e.target.checked })}
                   />
-                  <label htmlFor="bank-sync-active" style={{ fontSize: 13, color: theme.text }}>Active (accept incoming notifications)</label>
+                  <label htmlFor="bank-sync-active" style={{ fontSize: 13, color: theme.text }}>
+                    Active (accept incoming notifications)
+                  </label>
                 </div>
                 {saveError && <p style={{ color: theme.danger, fontSize: 13 }}>{saveError}</p>}
               </div>
@@ -378,7 +446,11 @@ export default function MerchantBankSync() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 <CopyField label="Webhook URL" value={webhookUrl} />
                 <div>
-                  <CopyField label="Verification token" value={summary?.webhook_verify_token ?? ''} masked={!!summary?.webhook_verify_token} />
+                  <CopyField
+                    label="Verification token"
+                    value={summary?.webhook_verify_token ?? ''}
+                    masked={!!summary?.webhook_verify_token}
+                  />
                   <button
                     type="button"
                     onClick={() => setShowRegenerateModal(true)}
@@ -397,7 +469,16 @@ export default function MerchantBankSync() {
                   </button>
                 </div>
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 500, color: theme.textSecondary, marginBottom: 8 }}>Instructions</div>
+                  <div
+                    style={{
+                      fontSize: 12,
+                      fontWeight: 500,
+                      color: theme.textSecondary,
+                      marginBottom: 8,
+                    }}
+                  >
+                    Instructions
+                  </div>
                   <InlineInstructionList steps={INSTRUCTION_STEPS} />
                 </div>
               </div>
@@ -547,14 +628,17 @@ export default function MerchantBankSync() {
               type="button"
               disabled={parseTesting}
               onClick={async () => {
-                if (!token) return;
-                setParseTesting(true);
-                setParseTestResult(null);
+                if (!token) return
+                setParseTesting(true)
+                setParseTestResult(null)
                 try {
-                  let body: { sample_payload?: Record<string, unknown> } = {};
+                  const body: { sample_payload?: Record<string, unknown> } = {}
                   if (samplePayloadText.trim()) {
                     try {
-                      body.sample_payload = JSON.parse(samplePayloadText.trim()) as Record<string, unknown>;
+                      body.sample_payload = JSON.parse(samplePayloadText.trim()) as Record<
+                        string,
+                        unknown
+                      >
                     } catch {
                       setParseTestResult({
                         success: false,
@@ -562,12 +646,12 @@ export default function MerchantBankSync() {
                         message: 'Invalid JSON',
                         parser_ready: false,
                         last_tested_at: new Date().toISOString(),
-                      });
-                      return;
+                      })
+                      return
                     }
                   }
-                  const res = await bankSyncSetupApi.testConnection(token, body);
-                  setParseTestResult(res);
+                  const res = await bankSyncSetupApi.testConnection(token, body)
+                  setParseTestResult(res)
                 } catch (e) {
                   setParseTestResult({
                     success: false,
@@ -575,9 +659,9 @@ export default function MerchantBankSync() {
                     message: e instanceof Error ? e.message : 'Test failed',
                     parser_ready: false,
                     last_tested_at: new Date().toISOString(),
-                  });
+                  })
                 } finally {
-                  setParseTesting(false);
+                  setParseTesting(false)
                 }
               }}
               style={{
@@ -604,41 +688,129 @@ export default function MerchantBankSync() {
                   fontSize: 13,
                 }}
               >
-                <div style={{ marginBottom: 8, fontWeight: 600, color: theme.text }}>Test result (test only)</div>
+                <div style={{ marginBottom: 8, fontWeight: 600, color: theme.text }}>
+                  Test result (test only)
+                </div>
                 <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 8 }}>
-                  <span>Scope: <strong style={{ color: parseTestResult.scope_status === 'scoped' ? theme.success : parseTestResult.scope_status === 'out_of_scope' ? theme.textMuted : theme.warning }}>{parseTestResult.scope_status ?? '—'}</strong></span>
-                  {parseTestResult.scope_confidence != null && <span>Confidence: {parseTestResult.scope_confidence}</span>}
+                  <span>
+                    Scope:{' '}
+                    <strong
+                      style={{
+                        color:
+                          parseTestResult.scope_status === 'scoped'
+                            ? theme.success
+                            : parseTestResult.scope_status === 'out_of_scope'
+                              ? theme.textMuted
+                              : theme.warning,
+                      }}
+                    >
+                      {parseTestResult.scope_status ?? '—'}
+                    </strong>
+                  </span>
+                  {parseTestResult.scope_confidence != null && (
+                    <span>Confidence: {parseTestResult.scope_confidence}</span>
+                  )}
                 </div>
                 {parseTestResult.decision_reason && (
-                  <div style={{ color: theme.textSecondary, marginBottom: 8 }}>{parseTestResult.decision_reason}</div>
-                )}
-                {parseTestResult.extracted_fields && Object.keys(parseTestResult.extracted_fields).length > 0 && (
-                  <div style={{ fontSize: 12, color: theme.textMuted }}>
-                    Extracted: {JSON.stringify(parseTestResult.extracted_fields)}
+                  <div style={{ color: theme.textSecondary, marginBottom: 8 }}>
+                    {parseTestResult.decision_reason}
                   </div>
                 )}
+                {parseTestResult.extracted_fields &&
+                  Object.keys(parseTestResult.extracted_fields).length > 0 && (
+                    <div style={{ fontSize: 12, color: theme.textMuted }}>
+                      Extracted: {JSON.stringify(parseTestResult.extracted_fields)}
+                    </div>
+                  )}
               </div>
             )}
           </div>
         </Section>
 
         {/* Monitoring: Recent transactions */}
-        <Section title="Recent transactions" description="Incoming bank transactions from your connected device">
+        <Section
+          title="Recent transactions"
+          description="Incoming bank transactions from your connected device"
+        >
           {bankTransactions.length === 0 ? (
             <EmptyState
               title="No transactions yet"
               description="After you complete the setup and connect your app, transactions will appear here."
             />
           ) : (
-            <div style={{ overflowX: 'auto', border: `1px solid ${theme.borderMuted}`, borderRadius: 8, overflow: 'hidden' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', background: theme.surface, fontSize: 13 }}>
+            <div
+              style={{
+                overflowX: 'auto',
+                border: `1px solid ${theme.borderMuted}`,
+                borderRadius: 8,
+                overflow: 'hidden',
+              }}
+            >
+              <table
+                style={{
+                  width: '100%',
+                  borderCollapse: 'collapse',
+                  background: theme.surface,
+                  fontSize: 13,
+                }}
+              >
                 <thead>
-                  <tr style={{ background: theme.surfaceElevated, borderBottom: `1px solid ${theme.borderMuted}` }}>
-                    <th style={{ padding: 12, textAlign: 'left', color: theme.textSecondary, fontWeight: 600 }}>Amount</th>
-                    <th style={{ padding: 12, textAlign: 'left', color: theme.textSecondary, fontWeight: 600 }}>Sender</th>
-                    <th style={{ padding: 12, textAlign: 'left', color: theme.textSecondary, fontWeight: 600 }}>Time</th>
-                    <th style={{ padding: 12, textAlign: 'left', color: theme.textSecondary, fontWeight: 600 }}>Reference</th>
-                    <th style={{ padding: 12, textAlign: 'left', color: theme.textSecondary, fontWeight: 600 }}>Scope</th>
+                  <tr
+                    style={{
+                      background: theme.surfaceElevated,
+                      borderBottom: `1px solid ${theme.borderMuted}`,
+                    }}
+                  >
+                    <th
+                      style={{
+                        padding: 12,
+                        textAlign: 'left',
+                        color: theme.textSecondary,
+                        fontWeight: 600,
+                      }}
+                    >
+                      Amount
+                    </th>
+                    <th
+                      style={{
+                        padding: 12,
+                        textAlign: 'left',
+                        color: theme.textSecondary,
+                        fontWeight: 600,
+                      }}
+                    >
+                      Sender
+                    </th>
+                    <th
+                      style={{
+                        padding: 12,
+                        textAlign: 'left',
+                        color: theme.textSecondary,
+                        fontWeight: 600,
+                      }}
+                    >
+                      Time
+                    </th>
+                    <th
+                      style={{
+                        padding: 12,
+                        textAlign: 'left',
+                        color: theme.textSecondary,
+                        fontWeight: 600,
+                      }}
+                    >
+                      Reference
+                    </th>
+                    <th
+                      style={{
+                        padding: 12,
+                        textAlign: 'left',
+                        color: theme.textSecondary,
+                        fontWeight: 600,
+                      }}
+                    >
+                      Scope
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -646,8 +818,12 @@ export default function MerchantBankSync() {
                     <tr key={tx.id} style={{ borderBottom: `1px solid ${theme.borderMuted}` }}>
                       <td style={{ padding: 12, color: theme.text }}>{tx.amount}</td>
                       <td style={{ padding: 12, color: theme.text }}>{tx.sender_name ?? '—'}</td>
-                      <td style={{ padding: 12, color: theme.textSecondary }}>{formatDate(tx.transaction_at)}</td>
-                      <td style={{ padding: 12, color: theme.textSecondary }}>{tx.reference_code ?? '—'}</td>
+                      <td style={{ padding: 12, color: theme.textSecondary }}>
+                        {formatDate(tx.transaction_at)}
+                      </td>
+                      <td style={{ padding: 12, color: theme.textSecondary }}>
+                        {tx.reference_code ?? '—'}
+                      </td>
                       <td style={{ padding: 12 }}>
                         {tx.scope_status != null ? (
                           <span
@@ -655,13 +831,25 @@ export default function MerchantBankSync() {
                               fontSize: 11,
                               padding: '2px 8px',
                               borderRadius: 4,
-                              background: tx.scope_status === 'scoped' ? theme.successMuted : tx.scope_status === 'out_of_scope' ? theme.dangerMuted : theme.warningMuted,
-                              color: tx.scope_status === 'scoped' ? theme.success : tx.scope_status === 'out_of_scope' ? theme.danger : theme.warning,
+                              background:
+                                tx.scope_status === 'scoped'
+                                  ? theme.successMuted
+                                  : tx.scope_status === 'out_of_scope'
+                                    ? theme.dangerMuted
+                                    : theme.warningMuted,
+                              color:
+                                tx.scope_status === 'scoped'
+                                  ? theme.success
+                                  : tx.scope_status === 'out_of_scope'
+                                    ? theme.danger
+                                    : theme.warning,
                             }}
                           >
                             {(tx.scope_status as ScopingStatus) ?? '—'}
                           </span>
-                        ) : '—'}
+                        ) : (
+                          '—'
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -683,21 +871,73 @@ export default function MerchantBankSync() {
               <p style={{ fontSize: 13, color: theme.textSecondary, marginBottom: 12 }}>
                 {matchingResults.length} result(s)
               </p>
-              <div style={{ overflowX: 'auto', border: `1px solid ${theme.borderMuted}`, borderRadius: 8, overflow: 'hidden' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', background: theme.surface, fontSize: 13 }}>
+              <div
+                style={{
+                  overflowX: 'auto',
+                  border: `1px solid ${theme.borderMuted}`,
+                  borderRadius: 8,
+                  overflow: 'hidden',
+                }}
+              >
+                <table
+                  style={{
+                    width: '100%',
+                    borderCollapse: 'collapse',
+                    background: theme.surface,
+                    fontSize: 13,
+                  }}
+                >
                   <thead>
-                    <tr style={{ background: theme.surfaceElevated, borderBottom: `1px solid ${theme.borderMuted}` }}>
-                      <th style={{ padding: 12, textAlign: 'left', color: theme.textSecondary, fontWeight: 600 }}>Status</th>
-                      <th style={{ padding: 12, textAlign: 'left', color: theme.textSecondary, fontWeight: 600 }}>Score</th>
-                      <th style={{ padding: 12, textAlign: 'left', color: theme.textSecondary, fontWeight: 600 }}>Created</th>
+                    <tr
+                      style={{
+                        background: theme.surfaceElevated,
+                        borderBottom: `1px solid ${theme.borderMuted}`,
+                      }}
+                    >
+                      <th
+                        style={{
+                          padding: 12,
+                          textAlign: 'left',
+                          color: theme.textSecondary,
+                          fontWeight: 600,
+                        }}
+                      >
+                        Status
+                      </th>
+                      <th
+                        style={{
+                          padding: 12,
+                          textAlign: 'left',
+                          color: theme.textSecondary,
+                          fontWeight: 600,
+                        }}
+                      >
+                        Score
+                      </th>
+                      <th
+                        style={{
+                          padding: 12,
+                          textAlign: 'left',
+                          color: theme.textSecondary,
+                          fontWeight: 600,
+                        }}
+                      >
+                        Created
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {matchingResults.map((mr) => (
                       <tr key={mr.id} style={{ borderBottom: `1px solid ${theme.borderMuted}` }}>
-                        <td style={{ padding: 12 }}><StatusBadge status={mr.status} /></td>
-                        <td style={{ padding: 12, color: theme.text }}>{mr.score != null ? String(mr.score) : '—'}</td>
-                        <td style={{ padding: 12, color: theme.textSecondary }}>{formatDate(mr.created_at)}</td>
+                        <td style={{ padding: 12 }}>
+                          <StatusBadge status={mr.status} />
+                        </td>
+                        <td style={{ padding: 12, color: theme.text }}>
+                          {mr.score != null ? String(mr.score) : '—'}
+                        </td>
+                        <td style={{ padding: 12, color: theme.textSecondary }}>
+                          {formatDate(mr.created_at)}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -733,9 +973,12 @@ export default function MerchantBankSync() {
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 style={{ margin: '0 0 12px', fontSize: 16, color: theme.text }}>Regenerate verification token?</h3>
+            <h3 style={{ margin: '0 0 12px', fontSize: 16, color: theme.text }}>
+              Regenerate verification token?
+            </h3>
             <p style={{ margin: '0 0 20px', fontSize: 13, color: theme.textSecondary }}>
-              You must update your Android notification app with the new token. The old token will stop working.
+              You must update your Android notification app with the new token. The old token will
+              stop working.
             </p>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
               <button
@@ -775,5 +1018,5 @@ export default function MerchantBankSync() {
         </div>
       )}
     </PageShell>
-  );
+  )
 }

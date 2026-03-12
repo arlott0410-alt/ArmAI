@@ -1,5 +1,5 @@
-import React from 'react';
-import { theme } from '../../theme';
+import React from 'react'
+import { theme } from '../../theme'
 
 export function PanelCard({
   title,
@@ -8,11 +8,11 @@ export function PanelCard({
   children,
   style,
 }: {
-  title: string;
-  subtitle?: string;
-  action?: React.ReactNode;
-  children: React.ReactNode;
-  style?: React.CSSProperties;
+  title: string
+  subtitle?: string
+  action?: React.ReactNode
+  children: React.ReactNode
+  style?: React.CSSProperties
 }) {
   return (
     <div
@@ -36,7 +36,15 @@ export function PanelCard({
         }}
       >
         <div>
-          <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: theme.text, letterSpacing: '0.02em' }}>
+          <h3
+            style={{
+              margin: 0,
+              fontSize: 14,
+              fontWeight: 600,
+              color: theme.text,
+              letterSpacing: '0.02em',
+            }}
+          >
             {title}
           </h3>
           {subtitle != null && (
@@ -47,5 +55,5 @@ export function PanelCard({
       </div>
       <div style={{ padding: 20 }}>{children}</div>
     </div>
-  );
+  )
 }

@@ -2,9 +2,9 @@
  * Log router and AI usage for metrics. No PII or message content.
  */
 
-import type { SupabaseClient } from '@supabase/supabase-js';
-import type { ResponseMode } from './conversation-router.js';
-import type { RouteCategory } from './conversation-router.js';
+import type { SupabaseClient } from '@supabase/supabase-js'
+import type { ResponseMode } from './conversation-router.js'
+import type { RouteCategory } from './conversation-router.js'
 
 export type AiCallReason =
   | 'selling_conversation'
@@ -13,14 +13,14 @@ export type AiCallReason =
   | 'unsupported_rule_case'
   | 'template'
   | 'retrieval'
-  | 'escalation';
+  | 'escalation'
 
 export interface LogAiUsageInput {
-  merchantId: string;
-  conversationId: string | null;
-  responseMode: ResponseMode;
-  aiCallReason?: AiCallReason | null;
-  routeCategory?: RouteCategory | null;
+  merchantId: string
+  conversationId: string | null
+  responseMode: ResponseMode
+  aiCallReason?: AiCallReason | null
+  routeCategory?: RouteCategory | null
 }
 
 export async function logAiUsage(supabase: SupabaseClient, input: LogAiUsageInput): Promise<void> {
@@ -30,6 +30,6 @@ export async function logAiUsage(supabase: SupabaseClient, input: LogAiUsageInpu
     response_mode: input.responseMode,
     ai_call_reason: input.aiCallReason ?? null,
     route_category: input.routeCategory ?? null,
-  });
-  if (error) throw new Error(error.message);
+  })
+  if (error) throw new Error(error.message)
 }

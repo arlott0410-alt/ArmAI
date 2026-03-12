@@ -1,32 +1,32 @@
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { useEffect } from 'react';
-import { merchantApi } from '../lib/api';
-import { theme } from '../theme';
-import { useI18n } from '../i18n/I18nProvider';
-import { deriveLocaleFromMerchant } from '../i18n/locales';
+import { Outlet, NavLink, useNavigate } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
+import { useEffect } from 'react'
+import { merchantApi } from '../lib/api'
+import { theme } from '../theme'
+import { useI18n } from '../i18n/I18nProvider'
+import { deriveLocaleFromMerchant } from '../i18n/locales'
 
 export default function MerchantLayout() {
-  const { user, signOut } = useAuth();
-  const navigate = useNavigate();
-  const { t, setLocale } = useI18n();
-  const token = user?.accessToken ?? null;
+  const { user, signOut } = useAuth()
+  const navigate = useNavigate()
+  const { t, setLocale } = useI18n()
+  const token = user?.accessToken ?? null
 
   useEffect(() => {
-    if (!token) return;
+    if (!token) return
     merchantApi
       .dashboard(token)
       .then((r) => {
-        const l = deriveLocaleFromMerchant(r.merchant ?? null);
-        setLocale(l);
+        const l = deriveLocaleFromMerchant(r.merchant ?? null)
+        setLocale(l)
       })
-      .catch(() => {});
-  }, [token, setLocale]);
+      .catch(() => {})
+  }, [token, setLocale])
 
   const handleSignOut = async () => {
-    await signOut();
-    navigate('/login');
-  };
+    await signOut()
+    navigate('/login')
+  }
 
   const navStyle = ({ isActive }: { isActive: boolean }) => ({
     display: 'block',
@@ -37,7 +37,7 @@ export default function MerchantLayout() {
     fontSize: 13,
     fontWeight: isActive ? 600 : 500,
     borderLeft: isActive ? `3px solid ${theme.primary}` : '3px solid transparent',
-  });
+  })
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: theme.background }}>
@@ -52,27 +52,68 @@ export default function MerchantLayout() {
         }}
       >
         <div style={{ marginBottom: 24 }}>
-          <span style={{ fontSize: 18, fontWeight: 700, color: theme.text, letterSpacing: '-0.02em' }}>ArmAI</span>
-          <span style={{ fontSize: 11, color: theme.primary, marginLeft: 6, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+          <span
+            style={{ fontSize: 18, fontWeight: 700, color: theme.text, letterSpacing: '-0.02em' }}
+          >
+            ArmAI
+          </span>
+          <span
+            style={{
+              fontSize: 11,
+              color: theme.primary,
+              marginLeft: 6,
+              fontWeight: 600,
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
+            }}
+          >
             {t('app.workspace')}
           </span>
         </div>
         <nav style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <NavLink to="/merchant/dashboard" style={navStyle}>{t('nav.overview')}</NavLink>
-          <NavLink to="/merchant/orders" style={navStyle}>{t('nav.orders')}</NavLink>
-          <NavLink to="/merchant/products" style={navStyle}>{t('nav.products')}</NavLink>
-          <NavLink to="/merchant/categories" style={navStyle}>{t('nav.categories')}</NavLink>
-          <NavLink to="/merchant/knowledge" style={navStyle}>{t('nav.knowledge')}</NavLink>
-          <NavLink to="/merchant/promotions" style={navStyle}>{t('nav.promotions')}</NavLink>
-          <NavLink to="/merchant/payment-accounts" style={navStyle}>{t('nav.paymentAccounts')}</NavLink>
-          <NavLink to="/merchant/bank-sync" style={navStyle}>{t('nav.bankSync')}</NavLink>
-          <NavLink to="/merchant/operations" style={navStyle}>{t('nav.operations')}</NavLink>
-          <NavLink to="/merchant/telegram" style={navStyle}>{t('nav.telegram')}</NavLink>
-          <NavLink to="/merchant/channels" style={navStyle}>{t('nav.messaging')}</NavLink>
-          <NavLink to="/merchant/customers" style={navStyle}>{t('nav.customers')}</NavLink>
-          <NavLink to="/merchant/settings" style={navStyle}>{t('nav.settings')}</NavLink>
+          <NavLink to="/merchant/dashboard" style={navStyle}>
+            {t('nav.overview')}
+          </NavLink>
+          <NavLink to="/merchant/orders" style={navStyle}>
+            {t('nav.orders')}
+          </NavLink>
+          <NavLink to="/merchant/products" style={navStyle}>
+            {t('nav.products')}
+          </NavLink>
+          <NavLink to="/merchant/categories" style={navStyle}>
+            {t('nav.categories')}
+          </NavLink>
+          <NavLink to="/merchant/knowledge" style={navStyle}>
+            {t('nav.knowledge')}
+          </NavLink>
+          <NavLink to="/merchant/promotions" style={navStyle}>
+            {t('nav.promotions')}
+          </NavLink>
+          <NavLink to="/merchant/payment-accounts" style={navStyle}>
+            {t('nav.paymentAccounts')}
+          </NavLink>
+          <NavLink to="/merchant/bank-sync" style={navStyle}>
+            {t('nav.bankSync')}
+          </NavLink>
+          <NavLink to="/merchant/operations" style={navStyle}>
+            {t('nav.operations')}
+          </NavLink>
+          <NavLink to="/merchant/telegram" style={navStyle}>
+            {t('nav.telegram')}
+          </NavLink>
+          <NavLink to="/merchant/channels" style={navStyle}>
+            {t('nav.messaging')}
+          </NavLink>
+          <NavLink to="/merchant/customers" style={navStyle}>
+            {t('nav.customers')}
+          </NavLink>
+          <NavLink to="/merchant/settings" style={navStyle}>
+            {t('nav.settings')}
+          </NavLink>
         </nav>
-        <div style={{ marginTop: 'auto', paddingTop: 24, borderTop: `1px solid ${theme.borderMuted}` }}>
+        <div
+          style={{ marginTop: 'auto', paddingTop: 24, borderTop: `1px solid ${theme.borderMuted}` }}
+        >
           <div style={{ fontSize: 12, color: theme.textMuted, marginBottom: 8 }}>{user?.email}</div>
           <button
             onClick={handleSignOut}
@@ -93,5 +134,5 @@ export default function MerchantLayout() {
         <Outlet />
       </main>
     </div>
-  );
+  )
 }

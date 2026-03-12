@@ -12,7 +12,7 @@ export const ORDER_STATUS = {
   PAID: 'paid',
   MANUAL_REVIEW: 'manual_review',
   CANCELLED: 'cancelled',
-} as const;
+} as const
 
 /** Matching result status. Only confirmed + business rule leads to paid. */
 export const MATCHING_RESULT_STATUS = {
@@ -22,32 +22,32 @@ export const MATCHING_RESULT_STATUS = {
   MANUAL_REVIEW: 'manual_review',
   CONFIRMED: 'confirmed',
   REJECTED: 'rejected',
-} as const;
+} as const
 
 /** User/role from profiles + merchant_members. */
 export const ROLE = {
   SUPER_ADMIN: 'super_admin',
   MERCHANT_ADMIN: 'merchant_admin',
-} as const;
+} as const
 
 /** Merchant config cache TTL in seconds. L1 best-effort only; DB is source of truth. */
-export const MERCHANT_CONFIG_CACHE_TTL_SEC = 300;
+export const MERCHANT_CONFIG_CACHE_TTL_SEC = 300
 
 /** Debounce window for message aggregation (ms). */
-export const MESSAGE_DEBOUNCE_MS = 4000;
+export const MESSAGE_DEBOUNCE_MS = 4000
 
 /** Minimum matching score (0-1) to consider auto_matched. */
-export const AUTO_MATCH_MIN_SCORE = 0.9;
+export const AUTO_MATCH_MIN_SCORE = 0.9
 
 /** Minimum score for probable_match. */
-export const PROBABLE_MATCH_MIN_SCORE = 0.7;
+export const PROBABLE_MATCH_MIN_SCORE = 0.7
 
 /** Active payment method per order. Only one at a time. */
 export const PAYMENT_METHOD = {
   PREPAID_BANK_TRANSFER: 'prepaid_bank_transfer',
   PREPAID_QR: 'prepaid_qr',
   COD: 'cod',
-} as const;
+} as const
 
 /** Payment lifecycle status (separate from order_status). */
 export const PAYMENT_STATUS = {
@@ -62,7 +62,7 @@ export const PAYMENT_STATUS = {
   COD_COLLECTED: 'cod_collected',
   COD_FAILED: 'cod_failed',
   COD_CANCELLED: 'cod_cancelled',
-} as const;
+} as const
 
 /** COD detail row status. */
 export const ORDER_COD_STATUS = {
@@ -74,14 +74,14 @@ export const ORDER_COD_STATUS = {
   DELIVERED_UNCOLLECTED: 'delivered_uncollected',
   COLLECTED: 'collected',
   CANCELLED: 'cancelled',
-} as const;
+} as const
 
 /** Payment method switch result. */
 export const PAYMENT_SWITCH_RESULT = {
   ALLOWED: 'allowed',
   DENIED: 'denied',
   REQUIRES_MANUAL_CONFIRMATION: 'requires_manual_confirmation',
-} as const;
+} as const
 
 /** Who requested the payment method switch. */
 export const PAYMENT_SWITCH_REQUESTED_BY = {
@@ -89,10 +89,10 @@ export const PAYMENT_SWITCH_REQUESTED_BY = {
   AI: 'ai',
   MERCHANT_ADMIN: 'merchant_admin',
   SYSTEM: 'system',
-} as const;
+} as const
 
 /** Switch count above which manual confirmation may be required. */
-export const PAYMENT_SWITCH_CONFIRMATION_THRESHOLD = 2;
+export const PAYMENT_SWITCH_CONFIRMATION_THRESHOLD = 2
 
 /** Order fulfillment lifecycle (post-payment). */
 export const FULFILLMENT_STATUS = {
@@ -102,7 +102,7 @@ export const FULFILLMENT_STATUS = {
   DELIVERED: 'delivered',
   DELIVERY_FAILED: 'delivery_failed',
   CANCELLED: 'cancelled',
-} as const;
+} as const
 
 /** Shipment record status. */
 export const SHIPMENT_STATUS = {
@@ -111,7 +111,7 @@ export const SHIPMENT_STATUS = {
   IN_TRANSIT: 'in_transit',
   DELIVERED: 'delivered',
   FAILED: 'failed',
-} as const;
+} as const
 
 /** Shipment method. */
 export const SHIPMENT_METHOD = {
@@ -119,4 +119,4 @@ export const SHIPMENT_METHOD = {
   LOCAL_DELIVERY: 'local_delivery',
   PICKUP: 'pickup',
   MANUAL_DISPATCH: 'manual_dispatch',
-} as const;
+} as const

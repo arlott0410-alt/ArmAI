@@ -4,15 +4,15 @@
  * Phone normalization is country-aware (Laos +856/020, Thailand 66/0) when merchant context available.
  */
 
-import type { SupabaseClient } from '@supabase/supabase-js';
-import type { ChannelType } from '@armai/shared';
-import type { CustomerIdentityActorType, CustomerIdentityEventType } from '@armai/shared';
-import { normalizePhone as normalizePhoneGeneric, normalizePhoneByCountry } from '@armai/shared';
-import * as merchantService from './merchant.js';
+import type { SupabaseClient } from '@supabase/supabase-js'
+import type { ChannelType } from '@armai/shared'
+import type { CustomerIdentityActorType, CustomerIdentityEventType } from '@armai/shared'
+import { normalizePhone as normalizePhoneGeneric, normalizePhoneByCountry } from '@armai/shared'
+import * as merchantService from './merchant.js'
 
 /** Normalize phone (generic, digits only, min 8). Backward compat when country unknown. */
 export function normalizePhone(phone: string | null | undefined): string | null {
-  return normalizePhoneGeneric(phone);
+  return normalizePhoneGeneric(phone)
 }
 
 /**
@@ -23,25 +23,25 @@ export async function normalizePhoneForMerchant(
   merchantId: string,
   phone: string | null | undefined
 ): Promise<string | null> {
-  const merchant = await merchantService.getMerchantById(supabase, merchantId).catch(() => null);
-  const country = merchant?.default_country ?? undefined;
-  return normalizePhoneByCountry(phone, country);
+  const merchant = await merchantService.getMerchantById(supabase, merchantId).catch(() => null)
+  const country = merchant?.default_country ?? undefined
+  return normalizePhoneByCountry(phone, country)
 }
 
 /** Get or create customer_channel_identity; update last_seen_at and optional phone/display name. */
 export async function getOrCreateChannelIdentity(
   supabase: SupabaseClient,
   p: {
-    merchantId: string;
-    channelType: ChannelType;
-    externalUserId: string;
-    channelDisplayName?: string | null;
-    phoneNumber?: string | null;
-    profileImageUrl?: string | null;
+    merchantId: string
+    channelType: ChannelType
+    externalUserId: string
+    channelDisplayName?: string | null
+    phoneNumber?: string | null
+    profileImageUrl?: string | null
   }
 ): Promise<{ id: string; merchantCustomerId: string | null }> {
-  const now = new Date().toISOString();
-  const normPhone = await normalizePhoneForMerchant(supabase, p.merchantId, p.phoneNumber);
+  const now = new Date().toISOString()
+  const normPhone = await normalizePhoneForMerchant(supabase, p.merchantId, p.phoneNumber)
 
   const { data: existing } = await supabase
     .from('customer_channel_identities')
@@ -49,7 +49,7 @@ export async function getOrCreateChannelIdentity(
     .eq('merchant_id', p.merchantId)
     .eq('channel_type', p.channelType)
     .eq('external_user_id', p.externalUserId)
-    .single();
+    .single()
 
   if (existing) {
     await supabase
@@ -62,8 +62,8 @@ export async function getOrCreateChannelIdentity(
         profile_image_url: p.profileImageUrl ?? undefined,
         updated_at: now,
       })
-      .eq('id', existing.id);
-    return { id: existing.id, merchantCustomerId: existing.merchant_customer_id };
+      .eq('id', existing.id)
+    return { id: existing.id, merchantCustomerId: existing.merchant_customer_id }
   }
 
   const { data: inserted, error } = await supabase
@@ -81,31 +81,31 @@ export async function getOrCreateChannelIdentity(
       updated_at: now,
     })
     .select('id, merchant_customer_id')
-    .single();
+    .single()
 
-  if (error) throw new Error(error.message);
+  if (error) throw new Error(error.message)
   await recordIdentityEvent(supabase, {
     merchantId: p.merchantId,
     channelIdentityId: inserted!.id,
     eventType: 'identity_created',
     actorType: 'system',
-  });
-  return { id: inserted!.id, merchantCustomerId: inserted!.merchant_customer_id };
+  })
+  return { id: inserted!.id, merchantCustomerId: inserted!.merchant_customer_id }
 }
 
 /** Record an identity event for audit. */
 export async function recordIdentityEvent(
   supabase: SupabaseClient,
   p: {
-    merchantId: string;
-    merchantCustomerId?: string | null;
-    channelIdentityId?: string | null;
-    eventType: CustomerIdentityEventType;
-    previousMerchantCustomerId?: string | null;
-    newMerchantCustomerId?: string | null;
-    reason?: string | null;
-    actorType: CustomerIdentityActorType;
-    actorId?: string | null;
+    merchantId: string
+    merchantCustomerId?: string | null
+    channelIdentityId?: string | null
+    eventType: CustomerIdentityEventType
+    previousMerchantCustomerId?: string | null
+    newMerchantCustomerId?: string | null
+    reason?: string | null
+    actorType: CustomerIdentityActorType
+    actorId?: string | null
   }
 ): Promise<void> {
   const { error } = await supabase.from('customer_identity_events').insert({
@@ -118,8 +118,8 @@ export async function recordIdentityEvent(
     reason: p.reason ?? null,
     actor_type: p.actorType,
     actor_id: p.actorId ?? null,
-  });
-  if (error) throw new Error(error.message);
+  })
+  if (error) throw new Error(error.message)
 }
 
 /**
@@ -130,31 +130,31 @@ export async function recordIdentityEvent(
 export async function tryAutoLinkByPhone(
   supabase: SupabaseClient,
   p: {
-    merchantId: string;
-    channelIdentityId: string;
-    normalizedPhone: string | null;
+    merchantId: string
+    channelIdentityId: string
+    normalizedPhone: string | null
   }
 ): Promise<string | null> {
-  if (!p.normalizedPhone?.trim()) return null;
+  if (!p.normalizedPhone?.trim()) return null
 
   const { data: existingLink } = await supabase
     .from('customer_channel_identities')
     .select('merchant_customer_id')
     .eq('id', p.channelIdentityId)
     .eq('merchant_id', p.merchantId)
-    .single();
-  if (existingLink?.merchant_customer_id) return existingLink.merchant_customer_id;
+    .single()
+  if (existingLink?.merchant_customer_id) return existingLink.merchant_customer_id
 
   const { data: customers } = await supabase
     .from('merchant_customers')
     .select('id')
     .eq('merchant_id', p.merchantId)
     .eq('normalized_phone', p.normalizedPhone.trim())
-    .eq('status', 'active');
-  const list = customers ?? [];
-  if (list.length !== 1) return null;
+    .eq('status', 'active')
+  const list = customers ?? []
+  if (list.length !== 1) return null
 
-  const merchantCustomerId = list[0].id;
+  const merchantCustomerId = list[0].id
   await supabase
     .from('customer_channel_identities')
     .update({
@@ -162,7 +162,7 @@ export async function tryAutoLinkByPhone(
       updated_at: new Date().toISOString(),
     })
     .eq('id', p.channelIdentityId)
-    .eq('merchant_id', p.merchantId);
+    .eq('merchant_id', p.merchantId)
 
   await recordIdentityEvent(supabase, {
     merchantId: p.merchantId,
@@ -172,8 +172,8 @@ export async function tryAutoLinkByPhone(
     newMerchantCustomerId: merchantCustomerId,
     reason: 'Exact normalized phone match',
     actorType: 'system',
-  });
-  return merchantCustomerId;
+  })
+  return merchantCustomerId
 }
 
 /**
@@ -183,10 +183,10 @@ export async function tryAutoLinkByPhone(
 export async function linkIdentityToCustomer(
   supabase: SupabaseClient,
   p: {
-    merchantId: string;
-    channelIdentityId: string;
-    merchantCustomerId: string;
-    actorId: string | null;
+    merchantId: string
+    channelIdentityId: string
+    merchantCustomerId: string
+    actorId: string | null
   }
 ): Promise<void> {
   const [{ data: ident }, { data: cust }] = await Promise.all([
@@ -202,11 +202,11 @@ export async function linkIdentityToCustomer(
       .eq('id', p.merchantCustomerId)
       .eq('merchant_id', p.merchantId)
       .single(),
-  ]);
-  if (!ident) throw new Error('Channel identity not found');
-  if (!cust) throw new Error('Merchant customer not found');
+  ])
+  if (!ident) throw new Error('Channel identity not found')
+  if (!cust) throw new Error('Merchant customer not found')
 
-  const previous = ident.merchant_customer_id ?? null;
+  const previous = ident.merchant_customer_id ?? null
   await supabase
     .from('customer_channel_identities')
     .update({
@@ -214,7 +214,7 @@ export async function linkIdentityToCustomer(
       updated_at: new Date().toISOString(),
     })
     .eq('id', p.channelIdentityId)
-    .eq('merchant_id', p.merchantId);
+    .eq('merchant_id', p.merchantId)
 
   await recordIdentityEvent(supabase, {
     merchantId: p.merchantId,
@@ -226,7 +226,7 @@ export async function linkIdentityToCustomer(
     reason: 'Manual link by merchant',
     actorType: 'merchant_admin',
     actorId: p.actorId,
-  });
+  })
 }
 
 /**
@@ -235,9 +235,9 @@ export async function linkIdentityToCustomer(
 export async function unlinkIdentity(
   supabase: SupabaseClient,
   p: {
-    merchantId: string;
-    channelIdentityId: string;
-    actorId: string | null;
+    merchantId: string
+    channelIdentityId: string
+    actorId: string | null
   }
 ): Promise<void> {
   const { data: ident } = await supabase
@@ -245,10 +245,10 @@ export async function unlinkIdentity(
     .select('id, merchant_customer_id')
     .eq('id', p.channelIdentityId)
     .eq('merchant_id', p.merchantId)
-    .single();
-  if (!ident) throw new Error('Channel identity not found');
+    .single()
+  if (!ident) throw new Error('Channel identity not found')
 
-  const previous = ident.merchant_customer_id ?? null;
+  const previous = ident.merchant_customer_id ?? null
   await supabase
     .from('customer_channel_identities')
     .update({
@@ -256,7 +256,7 @@ export async function unlinkIdentity(
       updated_at: new Date().toISOString(),
     })
     .eq('id', p.channelIdentityId)
-    .eq('merchant_id', p.merchantId);
+    .eq('merchant_id', p.merchantId)
 
   await recordIdentityEvent(supabase, {
     merchantId: p.merchantId,
@@ -267,21 +267,21 @@ export async function unlinkIdentity(
     reason: 'Manual unlink by merchant',
     actorType: 'merchant_admin',
     actorId: p.actorId,
-  });
+  })
 }
 
 /** Create a new merchant_customer and optionally link a channel identity. */
 export async function createMerchantCustomer(
   supabase: SupabaseClient,
   p: {
-    merchantId: string;
-    primaryDisplayName?: string | null;
-    phoneNumber?: string | null;
-    notes?: string | null;
+    merchantId: string
+    primaryDisplayName?: string | null
+    phoneNumber?: string | null
+    notes?: string | null
   }
 ): Promise<string> {
-  const norm = await normalizePhoneForMerchant(supabase, p.merchantId, p.phoneNumber);
-  const now = new Date().toISOString();
+  const norm = await normalizePhoneForMerchant(supabase, p.merchantId, p.phoneNumber)
+  const now = new Date().toISOString()
   const { data, error } = await supabase
     .from('merchant_customers')
     .insert({
@@ -294,7 +294,7 @@ export async function createMerchantCustomer(
       updated_at: now,
     })
     .select('id')
-    .single();
-  if (error) throw new Error(error.message);
-  return data!.id;
+    .single()
+  if (error) throw new Error(error.message)
+  return data!.id
 }

@@ -1,5 +1,5 @@
-import React from 'react';
-import { theme } from '../../theme';
+import React from 'react'
+import { theme } from '../../theme'
 
 const statusMap: Record<string, { label: string; color: string; bg: string }> = {
   active: { label: 'Active', color: theme.success, bg: theme.successMuted },
@@ -20,19 +20,23 @@ const statusMap: Record<string, { label: string; color: string; bg: string }> = 
   needs_attention: { label: 'Needs attention', color: theme.warning, bg: theme.warningMuted },
   configured: { label: 'Configured', color: theme.info, bg: theme.infoMuted },
   unmatched: { label: 'Unmatched', color: theme.textMuted, bg: 'rgba(255,255,255,0.06)' },
-};
+}
 
 export function StatusBadge({
   status,
   label,
   style,
 }: {
-  status: string;
-  label?: string;
-  style?: React.CSSProperties;
+  status: string
+  label?: string
+  style?: React.CSSProperties
 }) {
-  const config = statusMap[status] ?? { label: status, color: theme.textSecondary, bg: 'rgba(255,255,255,0.1)' };
-  const displayLabel = label ?? config.label;
+  const config = statusMap[status] ?? {
+    label: status,
+    color: theme.textSecondary,
+    bg: 'rgba(255,255,255,0.1)',
+  }
+  const displayLabel = label ?? config.label
   return (
     <span
       style={{
@@ -50,5 +54,5 @@ export function StatusBadge({
     >
       {displayLabel}
     </span>
-  );
+  )
 }

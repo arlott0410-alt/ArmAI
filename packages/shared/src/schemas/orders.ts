@@ -1,5 +1,5 @@
-import { z } from 'zod';
-import { ORDER_STATUS } from '../constants.js';
+import { z } from 'zod'
+import { ORDER_STATUS } from '../constants.js'
 
 const orderStatusEnum = z.enum([
   ORDER_STATUS.PENDING,
@@ -10,7 +10,7 @@ const orderStatusEnum = z.enum([
   ORDER_STATUS.PAID,
   ORDER_STATUS.MANUAL_REVIEW,
   ORDER_STATUS.CANCELLED,
-]);
+])
 
 export const orderSchema = z.object({
   id: z.string().uuid(),
@@ -22,11 +22,11 @@ export const orderSchema = z.object({
   reference_code: z.string().nullable(),
   created_at: z.string(),
   updated_at: z.string(),
-});
+})
 
 export const confirmMatchBodySchema = z.object({
   matching_result_id: z.string().uuid(),
   confirm: z.boolean(),
-});
+})
 
-export type ConfirmMatchBody = z.infer<typeof confirmMatchBodySchema>;
+export type ConfirmMatchBody = z.infer<typeof confirmMatchBodySchema>

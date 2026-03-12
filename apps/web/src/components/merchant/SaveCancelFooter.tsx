@@ -1,5 +1,5 @@
-import React from 'react';
-import { theme } from '../../theme';
+import React from 'react'
+import { theme } from '../../theme'
 
 const cancelStyle: React.CSSProperties = {
   padding: '8px 16px',
@@ -10,7 +10,7 @@ const cancelStyle: React.CSSProperties = {
   fontWeight: 500,
   fontSize: 13,
   cursor: 'pointer',
-};
+}
 
 const saveStyle: React.CSSProperties = {
   padding: '8px 20px',
@@ -21,7 +21,7 @@ const saveStyle: React.CSSProperties = {
   fontWeight: 600,
   fontSize: 13,
   cursor: 'pointer',
-};
+}
 
 export function SaveCancelFooter({
   onCancel,
@@ -29,16 +29,16 @@ export function SaveCancelFooter({
   saving,
   saveLabel = 'Save',
 }: {
-  onCancel: () => void;
-  onSave: () => void;
-  saving: boolean;
-  saveLabel?: string;
+  onCancel: () => void
+  onSave: () => void
+  saving: boolean
+  saveLabel?: string
 }) {
   const saveButtonStyle: React.CSSProperties = {
     ...saveStyle,
     opacity: saving ? 0.7 : 1,
     cursor: saving ? 'not-allowed' : 'pointer',
-  };
+  }
   return (
     <>
       <button type="button" onClick={onCancel} style={cancelStyle} disabled={saving}>
@@ -48,5 +48,5 @@ export function SaveCancelFooter({
         {saving ? 'Saving...' : saveLabel}
       </button>
     </>
-  );
+  )
 }

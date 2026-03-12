@@ -3,13 +3,13 @@
  * Returns normalized SlipExtraction; does NOT set order to paid.
  */
 
-import type { SlipExtraction } from '@armai/shared';
+import type { SlipExtraction } from '@armai/shared'
 
 export async function extractSlipFromImage(
   imageBytes: ArrayBuffer,
   apiKey: string
 ): Promise<SlipExtraction> {
-  const base64 = btoa(String.fromCharCode(...new Uint8Array(imageBytes)));
+  const base64 = btoa(String.fromCharCode(...new Uint8Array(imageBytes)))
   const res = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
     {
@@ -19,7 +19,9 @@ export async function extractSlipFromImage(
         contents: [
           {
             parts: [
-              { text: 'Extract from this transfer slip image: amount (number), sender name, date/time, reference code. If visible also extract: receiver account number, receiver bank name/code, receiver account holder name. Reply with JSON only: {"amount": number or null, "sender_name": string or null, "datetime": ISO string or null, "reference_code": string or null, "confidence_score": 0-1, "receiver_account": string or null, "receiver_bank": string or null, "receiver_name": string or null}' },
+              {
+                text: 'Extract from this transfer slip image: amount (number), sender name, date/time, reference code. If visible also extract: receiver account number, receiver bank name/code, receiver account holder name. Reply with JSON only: {"amount": number or null, "sender_name": string or null, "datetime": ISO string or null, "reference_code": string or null, "confidence_score": 0-1, "receiver_account": string or null, "receiver_bank": string or null, "receiver_name": string or null}',
+              },
               { inline_data: { mime_type: 'image/jpeg', data: base64 } },
             ],
           },
@@ -27,27 +29,30 @@ export async function extractSlipFromImage(
         generationConfig: { response_mime_type: 'application/json' },
       }),
     }
-  );
+  )
   if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Gemini API error: ${res.status} ${err}`);
+    const err = await res.text()
+    throw new Error(`Gemini API error: ${res.status} ${err}`)
   }
-  const data = (await res.json()) as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> };
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '{}';
-  let parsed: Record<string, unknown>;
+  const data = (await res.json()) as {
+    candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>
+  }
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '{}'
+  let parsed: Record<string, unknown>
   try {
-    parsed = JSON.parse(text) as Record<string, unknown>;
+    parsed = JSON.parse(text) as Record<string, unknown>
   } catch {
-    parsed = {};
+    parsed = {}
   }
-  const amount = typeof parsed.amount === 'number' ? parsed.amount : null;
-  const sender_name = typeof parsed.sender_name === 'string' ? parsed.sender_name : null;
-  const datetime = typeof parsed.datetime === 'string' ? parsed.datetime : null;
-  const reference_code = typeof parsed.reference_code === 'string' ? parsed.reference_code : null;
-  const confidence_score = typeof parsed.confidence_score === 'number' ? parsed.confidence_score : 0;
-  const receiver_account = typeof parsed.receiver_account === 'string' ? parsed.receiver_account : null;
-  const receiver_bank = typeof parsed.receiver_bank === 'string' ? parsed.receiver_bank : null;
-  const receiver_name = typeof parsed.receiver_name === 'string' ? parsed.receiver_name : null;
+  const amount = typeof parsed.amount === 'number' ? parsed.amount : null
+  const sender_name = typeof parsed.sender_name === 'string' ? parsed.sender_name : null
+  const datetime = typeof parsed.datetime === 'string' ? parsed.datetime : null
+  const reference_code = typeof parsed.reference_code === 'string' ? parsed.reference_code : null
+  const confidence_score = typeof parsed.confidence_score === 'number' ? parsed.confidence_score : 0
+  const receiver_account =
+    typeof parsed.receiver_account === 'string' ? parsed.receiver_account : null
+  const receiver_bank = typeof parsed.receiver_bank === 'string' ? parsed.receiver_bank : null
+  const receiver_name = typeof parsed.receiver_name === 'string' ? parsed.receiver_name : null
   return {
     amount,
     sender_name,
@@ -58,5 +63,5 @@ export async function extractSlipFromImage(
     receiver_account: receiver_account ?? undefined,
     receiver_bank: receiver_bank ?? undefined,
     receiver_name: receiver_name ?? undefined,
-  };
+  }
 }

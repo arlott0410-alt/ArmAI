@@ -1,37 +1,63 @@
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
-import { merchantApi, type MerchantDashboardResponse } from '../../lib/api';
-import { PageShell, StatCard, Card, CardBody, Section, EmptyState, StatusBadge, PanelCard } from '../../components/ui';
-import { theme } from '../../theme';
-import { useI18n } from '../../i18n/I18nProvider';
+import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { useAuth } from '../../contexts/AuthContext'
+import { merchantApi, type MerchantDashboardResponse } from '../../lib/api'
+import {
+  PageShell,
+  StatCard,
+  Card,
+  CardBody,
+  Section,
+  EmptyState,
+  StatusBadge,
+  PanelCard,
+} from '../../components/ui'
+import { theme } from '../../theme'
+import { useI18n } from '../../i18n/I18nProvider'
 
 export default function MerchantDashboard() {
-  const { user } = useAuth();
-  const { t } = useI18n();
-  const [data, setData] = useState<MerchantDashboardResponse | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const token = user?.accessToken ?? null;
+  const { user } = useAuth()
+  const { t } = useI18n()
+  const [data, setData] = useState<MerchantDashboardResponse | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const token = user?.accessToken ?? null
 
   useEffect(() => {
-    if (!token) return;
-    merchantApi.dashboard(token).then(setData).catch((e) => setError(e.message));
-  }, [token]);
+    if (!token) return
+    merchantApi
+      .dashboard(token)
+      .then(setData)
+      .catch((e) => setError(e.message))
+  }, [token])
 
-  if (error) return <p style={{ color: theme.danger }}>{error}</p>;
-  if (!data) return <p style={{ color: theme.textSecondary }}>Loading...</p>;
+  if (error) return <p style={{ color: theme.danger }}>{error}</p>
+  if (!data) return <p style={{ color: theme.textSecondary }}>Loading...</p>
 
-  const summary = data.summary;
-  const readiness = data.readiness ?? [];
-  const readyCount = readiness.filter((r) => r.status === 'ready').length;
-  const totalSteps = readiness.length;
-  const progressPct = totalSteps > 0 ? Math.round((readyCount / totalSteps) * 100) : 0;
+  const summary = data.summary
+  const readiness = data.readiness ?? []
+  const readyCount = readiness.filter((r) => r.status === 'ready').length
+  const totalSteps = readiness.length
+  const progressPct = totalSteps > 0 ? Math.round((readyCount / totalSteps) * 100) : 0
 
   return (
-    <PageShell title={t('merchant.overview.title')} description={t('merchant.overview.description')}>
+    <PageShell
+      title={t('merchant.overview.title')}
+      description={t('merchant.overview.description')}
+    >
       {summary != null && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 16, marginBottom: 28 }}>
-          <StatCard label={t('kpi.ordersToday')} value={summary.ordersToday} accent={summary.ordersToday > 0} />
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+            gap: 16,
+            marginBottom: 28,
+          }}
+        >
+          <StatCard
+            label={t('kpi.ordersToday')}
+            value={summary.ordersToday}
+            accent={summary.ordersToday > 0}
+          />
           <StatCard label={t('kpi.pendingPayment')} value={summary.pendingPayment} />
           <StatCard label={t('kpi.paidToday')} value={summary.paidToday} />
           <StatCard label={t('kpi.manualReview')} value={summary.manualReviewCount} />
@@ -44,7 +70,9 @@ export default function MerchantDashboard() {
 
       <Section
         title={t('merchant.setupReadiness.title')}
-        description={totalSteps > 0 ? `${readyCount} / ${totalSteps}` : t('merchant.setupReadiness.subtitle')}
+        description={
+          totalSteps > 0 ? `${readyCount} / ${totalSteps}` : t('merchant.setupReadiness.subtitle')
+        }
       >
         <PanelCard
           title="Setup checklist"
@@ -54,26 +82,58 @@ export default function MerchantDashboard() {
             <EmptyState title={t('merchant.setupReadiness.empty')} />
           ) : (
             <>
-              <div style={{ marginBottom: 16, height: 6, background: 'rgba(255,255,255,0.08)', borderRadius: 3, overflow: 'hidden' }}>
-                <div style={{ width: `${progressPct}%`, height: '100%', background: theme.primary, borderRadius: 3 }} />
+              <div
+                style={{
+                  marginBottom: 16,
+                  height: 6,
+                  background: 'rgba(255,255,255,0.08)',
+                  borderRadius: 3,
+                  overflow: 'hidden',
+                }}
+              >
+                <div
+                  style={{
+                    width: `${progressPct}%`,
+                    height: '100%',
+                    background: theme.primary,
+                    borderRadius: 3,
+                  }}
+                />
               </div>
               <ul style={{ margin: 0, padding: 0, listStyle: 'none' }}>
                 {readiness.map((r) => (
-                  <li key={r.key} style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <li
+                    key={r.key}
+                    style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 10 }}
+                  >
                     <StatusBadge status={r.status} />
                     <span style={{ color: theme.text }}>{r.label}</span>
-                    {r.detail != null && <span style={{ color: theme.textMuted, fontSize: 12 }}>{r.detail}</span>}
+                    {r.detail != null && (
+                      <span style={{ color: theme.textMuted, fontSize: 12 }}>{r.detail}</span>
+                    )}
                     {r.status !== 'ready' && (
                       <Link
                         to={
-                          r.key === 'products' ? '/merchant/products' :
-                          r.key === 'categories' ? '/merchant/categories' :
-                          r.key === 'payment_account' || r.key === 'primary_payment' ? '/merchant/payment-accounts' :
-                          r.key === 'ai_prompt' ? '/merchant/settings' :
-                          r.key === 'faq_knowledge' ? '/merchant/knowledge' :
-                          r.key === 'bank_parser' ? '/merchant/settings' : '/merchant/settings'
+                          r.key === 'products'
+                            ? '/merchant/products'
+                            : r.key === 'categories'
+                              ? '/merchant/categories'
+                              : r.key === 'payment_account' || r.key === 'primary_payment'
+                                ? '/merchant/payment-accounts'
+                                : r.key === 'ai_prompt'
+                                  ? '/merchant/settings'
+                                  : r.key === 'faq_knowledge'
+                                    ? '/merchant/knowledge'
+                                    : r.key === 'bank_parser'
+                                      ? '/merchant/settings'
+                                      : '/merchant/settings'
                         }
-                        style={{ marginLeft: 'auto', fontSize: 13, color: theme.primary, fontWeight: 500 }}
+                        style={{
+                          marginLeft: 'auto',
+                          fontSize: 13,
+                          color: theme.primary,
+                          fontWeight: 500,
+                        }}
                       >
                         {t('action.setUpArrow')}
                       </Link>
@@ -89,10 +149,12 @@ export default function MerchantDashboard() {
       {!summary && !data.settings && (
         <Card>
           <CardBody>
-            <p style={{ color: theme.textMuted, margin: 0 }}>Merchant ID: {data.merchantId}. Complete setup above to enable full dashboard.</p>
+            <p style={{ color: theme.textMuted, margin: 0 }}>
+              Merchant ID: {data.merchantId}. Complete setup above to enable full dashboard.
+            </p>
           </CardBody>
         </Card>
       )}
     </PageShell>
-  );
+  )
 }

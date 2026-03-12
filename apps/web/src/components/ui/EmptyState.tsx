@@ -1,5 +1,5 @@
-import React from 'react';
-import { theme } from '../../theme';
+import React from 'react'
+import { theme } from '../../theme'
 
 export function EmptyState({
   title,
@@ -7,10 +7,10 @@ export function EmptyState({
   action,
   style,
 }: {
-  title: string;
-  description?: string;
-  action?: React.ReactNode;
-  style?: React.CSSProperties;
+  title: string
+  description?: string
+  action?: React.ReactNode
+  style?: React.CSSProperties
 }) {
   return (
     <div
@@ -24,9 +24,11 @@ export function EmptyState({
         ...style,
       }}
     >
-      <div style={{ fontSize: 14, fontWeight: 500, color: theme.text, marginBottom: 4 }}>{title}</div>
+      <div style={{ fontSize: 14, fontWeight: 500, color: theme.text, marginBottom: 4 }}>
+        {title}
+      </div>
       {description != null && <div style={{ fontSize: 13, marginBottom: 16 }}>{description}</div>}
       {action}
     </div>
-  );
+  )
 }

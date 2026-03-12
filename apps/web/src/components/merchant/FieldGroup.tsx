@@ -1,5 +1,5 @@
-import React from 'react';
-import { theme } from '../../theme';
+import React from 'react'
+import { theme } from '../../theme'
 
 export function FieldGroup({
   label,
@@ -7,14 +7,22 @@ export function FieldGroup({
   children,
   style,
 }: {
-  label: string;
-  hint?: string;
-  children: React.ReactNode;
-  style?: React.CSSProperties;
+  label: string
+  hint?: string
+  children: React.ReactNode
+  style?: React.CSSProperties
 }) {
   return (
     <div style={{ marginBottom: 18, ...style }}>
-      <label style={{ display: 'block', marginBottom: 6, fontWeight: 500, color: theme.textSecondary, fontSize: 13 }}>
+      <label
+        style={{
+          display: 'block',
+          marginBottom: 6,
+          fontWeight: 500,
+          color: theme.textSecondary,
+          fontSize: 13,
+        }}
+      >
         {label}
       </label>
       {hint != null && (
@@ -22,5 +30,5 @@ export function FieldGroup({
       )}
       {children}
     </div>
-  );
+  )
 }

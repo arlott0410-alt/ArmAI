@@ -3,12 +3,13 @@ export const PRODUCT_STATUS = {
   ACTIVE: 'active',
   INACTIVE: 'inactive',
   ARCHIVED: 'archived',
-} as const;
+} as const
 
 export const PRODUCT_VARIANT_STATUS = {
   ACTIVE: 'active',
   INACTIVE: 'inactive',
-} as const;
+} as const
 
-export type ProductStatus = (typeof PRODUCT_STATUS)[keyof typeof PRODUCT_STATUS];
-export type ProductVariantStatus = (typeof PRODUCT_VARIANT_STATUS)[keyof typeof PRODUCT_VARIANT_STATUS];
+export type ProductStatus = (typeof PRODUCT_STATUS)[keyof typeof PRODUCT_STATUS]
+export type ProductVariantStatus =
+  (typeof PRODUCT_VARIANT_STATUS)[keyof typeof PRODUCT_VARIANT_STATUS]

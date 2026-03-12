@@ -1,9 +1,9 @@
-import type { I18nKey } from './keys';
+import type { I18nKey } from './keys'
 
-export const LOCALES = ['lo', 'th', 'en'] as const;
-export type Locale = (typeof LOCALES)[number];
+export const LOCALES = ['lo', 'th', 'en'] as const
+export type Locale = (typeof LOCALES)[number]
 
-export type Dictionary = Record<I18nKey, string>;
+export type Dictionary = Record<I18nKey, string>
 
 export const en: Dictionary = {
   'app.workspace': 'Workspace',
@@ -35,7 +35,7 @@ export const en: Dictionary = {
   'kpi.readyToShip': 'Ready to ship',
   'kpi.activeProducts': 'Active products',
   'kpi.paymentAccounts': 'Payment accounts',
-};
+}
 
 export const th: Dictionary = {
   'app.workspace': 'Workspace',
@@ -67,7 +67,7 @@ export const th: Dictionary = {
   'kpi.readyToShip': 'พร้อมจัดส่ง',
   'kpi.activeProducts': 'สินค้าพร้อมขาย',
   'kpi.paymentAccounts': 'บัญชีรับเงิน',
-};
+}
 
 export const lo: Dictionary = {
   'app.workspace': 'Workspace',
@@ -99,14 +99,15 @@ export const lo: Dictionary = {
   'kpi.readyToShip': 'ພ້ອມສົ່ງ',
   'kpi.activeProducts': 'ສິນຄ້າກຳລັງຂາຍ',
   'kpi.paymentAccounts': 'ບັນຊີຮັບເງິນ',
-};
-
-export const dictionaries: Record<Locale, Dictionary> = { en, th, lo };
-
-export function deriveLocaleFromMerchant(input: { default_country?: string | null } | null | undefined): Locale {
-  const cc = input?.default_country?.toUpperCase().trim();
-  if (cc === 'LA') return 'lo';
-  if (cc === 'TH') return 'th';
-  return 'en';
 }
 
+export const dictionaries: Record<Locale, Dictionary> = { en, th, lo }
+
+export function deriveLocaleFromMerchant(
+  input: { default_country?: string | null } | null | undefined
+): Locale {
+  const cc = input?.default_country?.toUpperCase().trim()
+  if (cc === 'LA') return 'lo'
+  if (cc === 'TH') return 'th'
+  return 'en'
+}

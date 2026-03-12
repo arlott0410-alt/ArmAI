@@ -1,15 +1,15 @@
-import React from 'react';
-import { theme } from '../../theme';
-import type { BankSyncTestResult } from '../../lib/api';
+import React from 'react'
+import { theme } from '../../theme'
+import type { BankSyncTestResult } from '../../lib/api'
 
 export function TestResultPanel({
   result,
   lastTestedAt,
   style,
 }: {
-  result: BankSyncTestResult | null;
-  lastTestedAt: string | null;
-  style?: React.CSSProperties;
+  result: BankSyncTestResult | null
+  lastTestedAt: string | null
+  style?: React.CSSProperties
 }) {
   if (!result) {
     return (
@@ -24,14 +24,15 @@ export function TestResultPanel({
           ...style,
         }}
       >
-        Run test to validate your connection. Last tested: {lastTestedAt ? new Date(lastTestedAt).toLocaleString() : '—'}
+        Run test to validate your connection. Last tested:{' '}
+        {lastTestedAt ? new Date(lastTestedAt).toLocaleString() : '—'}
       </div>
-    );
+    )
   }
 
-  const isSuccess = result.success;
-  const bg = isSuccess ? theme.successMuted : theme.dangerMuted;
-  const border = isSuccess ? theme.success : theme.danger;
+  const isSuccess = result.success
+  const bg = isSuccess ? theme.successMuted : theme.dangerMuted
+  const border = isSuccess ? theme.success : theme.danger
 
   return (
     <div
@@ -48,7 +49,9 @@ export function TestResultPanel({
       </div>
       <p style={{ margin: '0 0 8px', fontSize: 13, color: theme.text }}>{result.message}</p>
       {result.messages && result.messages.length > 0 && (
-        <ul style={{ margin: '8px 0 0', paddingLeft: 18, fontSize: 12, color: theme.textSecondary }}>
+        <ul
+          style={{ margin: '8px 0 0', paddingLeft: 18, fontSize: 12, color: theme.textSecondary }}
+        >
           {result.messages.map((m, i) => (
             <li key={i}>{m}</li>
           ))}
@@ -56,12 +59,13 @@ export function TestResultPanel({
       )}
       {result.parsed_preview && (
         <div style={{ marginTop: 10, fontSize: 12, color: theme.textSecondary }}>
-          Sample parse: amount {result.parsed_preview.amount}, ref {result.parsed_preview.reference_code ?? '—'}
+          Sample parse: amount {result.parsed_preview.amount}, ref{' '}
+          {result.parsed_preview.reference_code ?? '—'}
         </div>
       )}
       <div style={{ marginTop: 10, fontSize: 11, color: theme.textMuted }}>
         Last tested: {new Date(result.last_tested_at).toLocaleString()}
       </div>
     </div>
-  );
+  )
 }

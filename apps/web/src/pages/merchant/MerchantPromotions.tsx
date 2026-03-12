@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useState } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
-import { promotionsApi, type PromotionRow, type CreatePromotionBody } from '../../lib/api';
-import { PageShell, Card, CardBody, EmptyState } from '../../components/ui';
-import { FormModal, SaveCancelFooter, FieldGroup } from '../../components/merchant';
-import { theme } from '../../theme';
+import { useCallback, useEffect, useState } from 'react'
+import { useAuth } from '../../contexts/AuthContext'
+import { promotionsApi, type PromotionRow, type CreatePromotionBody } from '../../lib/api'
+import { PageShell, Card, CardBody, EmptyState } from '../../components/ui'
+import { FormModal, SaveCancelFooter, FieldGroup } from '../../components/merchant'
+import { theme } from '../../theme'
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
@@ -13,36 +13,36 @@ const inputStyle: React.CSSProperties = {
   borderRadius: 6,
   color: theme.text,
   fontSize: 13,
-};
+}
 
 function toDatetimeLocal(iso: string | null): string {
-  if (!iso) return '';
+  if (!iso) return ''
   try {
-    const d = new Date(iso);
-    const pad = (n: number) => String(n).padStart(2, '0');
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    const d = new Date(iso)
+    const pad = (n: number) => String(n).padStart(2, '0')
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
   } catch {
-    return '';
+    return ''
   }
 }
 
 function fromDatetimeLocal(s: string): string | null {
-  if (!s.trim()) return null;
-  const d = new Date(s);
-  return isNaN(d.getTime()) ? null : d.toISOString();
+  if (!s.trim()) return null
+  const d = new Date(s)
+  return isNaN(d.getTime()) ? null : d.toISOString()
 }
 
 export default function MerchantPromotions() {
-  const { user } = useAuth();
-  const token = user?.accessToken ?? null;
+  const { user } = useAuth()
+  const token = user?.accessToken ?? null
 
-  const [promotions, setPromotions] = useState<PromotionRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editing, setEditing] = useState<PromotionRow | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [formError, setFormError] = useState<string | null>(null);
+  const [promotions, setPromotions] = useState<PromotionRow[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [modalOpen, setModalOpen] = useState(false)
+  const [editing, setEditing] = useState<PromotionRow | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
 
   const [form, setForm] = useState<CreatePromotionBody>({
     title: '',
@@ -51,25 +51,25 @@ export default function MerchantPromotions() {
     valid_until: null,
     keywords: null,
     is_active: true,
-  });
+  })
 
   const load = useCallback(() => {
-    if (!token) return;
-    setLoading(true);
-    setError(null);
+    if (!token) return
+    setLoading(true)
+    setError(null)
     promotionsApi
       .list(token, { activeOnly: false })
       .then((r) => setPromotions(r.promotions))
       .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
-  }, [token]);
+      .finally(() => setLoading(false))
+  }, [token])
 
   useEffect(() => {
-    load();
-  }, [load]);
+    load()
+  }, [load])
 
   const openCreate = () => {
-    setEditing(null);
+    setEditing(null)
     setForm({
       title: '',
       content: null,
@@ -77,13 +77,13 @@ export default function MerchantPromotions() {
       valid_until: null,
       keywords: null,
       is_active: true,
-    });
-    setFormError(null);
-    setModalOpen(true);
-  };
+    })
+    setFormError(null)
+    setModalOpen(true)
+  }
 
   const openEdit = (p: PromotionRow) => {
-    setEditing(p);
+    setEditing(p)
     setForm({
       title: p.title,
       content: p.content ?? null,
@@ -91,25 +91,25 @@ export default function MerchantPromotions() {
       valid_until: p.valid_until ?? null,
       keywords: p.keywords ?? null,
       is_active: p.is_active,
-    });
-    setFormError(null);
-    setModalOpen(true);
-  };
+    })
+    setFormError(null)
+    setModalOpen(true)
+  }
 
   const closeModal = () => {
-    setModalOpen(false);
-    setEditing(null);
-    setFormError(null);
-  };
+    setModalOpen(false)
+    setEditing(null)
+    setFormError(null)
+  }
 
   const handleSave = async () => {
-    setFormError(null);
+    setFormError(null)
     if (!form.title.trim()) {
-      setFormError('Title is required.');
-      return;
+      setFormError('Title is required.')
+      return
     }
-    if (!token) return;
-    setSaving(true);
+    if (!token) return
+    setSaving(true)
     try {
       const body = {
         ...form,
@@ -117,23 +117,24 @@ export default function MerchantPromotions() {
         valid_from: form.valid_from || null,
         valid_until: form.valid_until || null,
         keywords: form.keywords || null,
-      };
-      if (editing) {
-        await promotionsApi.update(token, editing.id, body);
-      } else {
-        await promotionsApi.create(token, body);
       }
-      closeModal();
-      load();
+      if (editing) {
+        await promotionsApi.update(token, editing.id, body)
+      } else {
+        await promotionsApi.create(token, body)
+      }
+      closeModal()
+      load()
     } catch (e) {
-      setFormError(e instanceof Error ? e.message : 'Save failed');
+      setFormError(e instanceof Error ? e.message : 'Save failed')
     } finally {
-      setSaving(false);
+      setSaving(false)
     }
-  };
+  }
 
-  if (error) return <p style={{ color: theme.danger }}>{error}</p>;
-  if (loading && promotions.length === 0) return <p style={{ color: theme.textSecondary }}>Loading…</p>;
+  if (error) return <p style={{ color: theme.danger }}>{error}</p>
+  if (loading && promotions.length === 0)
+    return <p style={{ color: theme.textSecondary }}>Loading…</p>
 
   return (
     <PageShell
@@ -187,10 +188,50 @@ export default function MerchantPromotions() {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
                 <tr style={{ textAlign: 'left', borderBottom: `1px solid ${theme.borderMuted}` }}>
-                  <th style={{ padding: '12px 16px', color: theme.textMuted, fontWeight: 600, fontSize: 11, textTransform: 'uppercase' }}>Title</th>
-                  <th style={{ padding: '12px 16px', color: theme.textMuted, fontWeight: 600, fontSize: 11, textTransform: 'uppercase' }}>Valid from</th>
-                  <th style={{ padding: '12px 16px', color: theme.textMuted, fontWeight: 600, fontSize: 11, textTransform: 'uppercase' }}>Valid until</th>
-                  <th style={{ padding: '12px 16px', color: theme.textMuted, fontWeight: 600, fontSize: 11, textTransform: 'uppercase' }}>Active</th>
+                  <th
+                    style={{
+                      padding: '12px 16px',
+                      color: theme.textMuted,
+                      fontWeight: 600,
+                      fontSize: 11,
+                      textTransform: 'uppercase',
+                    }}
+                  >
+                    Title
+                  </th>
+                  <th
+                    style={{
+                      padding: '12px 16px',
+                      color: theme.textMuted,
+                      fontWeight: 600,
+                      fontSize: 11,
+                      textTransform: 'uppercase',
+                    }}
+                  >
+                    Valid from
+                  </th>
+                  <th
+                    style={{
+                      padding: '12px 16px',
+                      color: theme.textMuted,
+                      fontWeight: 600,
+                      fontSize: 11,
+                      textTransform: 'uppercase',
+                    }}
+                  >
+                    Valid until
+                  </th>
+                  <th
+                    style={{
+                      padding: '12px 16px',
+                      color: theme.textMuted,
+                      fontWeight: 600,
+                      fontSize: 11,
+                      textTransform: 'uppercase',
+                    }}
+                  >
+                    Active
+                  </th>
                   <th style={{ width: 80 }}></th>
                 </tr>
               </thead>
@@ -198,14 +239,25 @@ export default function MerchantPromotions() {
                 {promotions.map((p) => (
                   <tr key={p.id} style={{ borderBottom: `1px solid ${theme.borderMuted}` }}>
                     <td style={{ padding: '12px 16px', fontWeight: 500 }}>{p.title}</td>
-                    <td style={{ padding: '12px 16px', color: theme.textSecondary }}>{p.valid_from ? new Date(p.valid_from).toLocaleDateString() : '—'}</td>
-                    <td style={{ padding: '12px 16px', color: theme.textSecondary }}>{p.valid_until ? new Date(p.valid_until).toLocaleDateString() : '—'}</td>
+                    <td style={{ padding: '12px 16px', color: theme.textSecondary }}>
+                      {p.valid_from ? new Date(p.valid_from).toLocaleDateString() : '—'}
+                    </td>
+                    <td style={{ padding: '12px 16px', color: theme.textSecondary }}>
+                      {p.valid_until ? new Date(p.valid_until).toLocaleDateString() : '—'}
+                    </td>
                     <td style={{ padding: '12px 16px' }}>{p.is_active ? 'Yes' : 'No'}</td>
                     <td style={{ padding: '12px 16px' }}>
                       <button
                         type="button"
                         onClick={() => openEdit(p)}
-                        style={{ background: 'none', border: 0, color: theme.primary, cursor: 'pointer', fontSize: 13, fontWeight: 500 }}
+                        style={{
+                          background: 'none',
+                          border: 0,
+                          color: theme.primary,
+                          cursor: 'pointer',
+                          fontSize: 13,
+                          fontWeight: 500,
+                        }}
                       >
                         Edit
                       </button>
@@ -222,9 +274,18 @@ export default function MerchantPromotions() {
         open={modalOpen}
         onClose={closeModal}
         title={editing ? 'Edit promotion' : 'Create promotion'}
-        footer={<SaveCancelFooter onCancel={closeModal} onSave={handleSave} saving={saving} saveLabel={editing ? 'Update' : 'Create'} />}
+        footer={
+          <SaveCancelFooter
+            onCancel={closeModal}
+            onSave={handleSave}
+            saving={saving}
+            saveLabel={editing ? 'Update' : 'Create'}
+          />
+        }
       >
-        {formError && <p style={{ color: theme.danger, marginBottom: 12, fontSize: 13 }}>{formError}</p>}
+        {formError && (
+          <p style={{ color: theme.danger, marginBottom: 12, fontSize: 13 }}>{formError}</p>
+        )}
         <FieldGroup label="Title" hint="Required.">
           <input
             type="text"
@@ -246,7 +307,9 @@ export default function MerchantPromotions() {
           <input
             type="datetime-local"
             value={toDatetimeLocal(form.valid_from ?? null)}
-            onChange={(e) => setForm((f) => ({ ...f, valid_from: fromDatetimeLocal(e.target.value) }))}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, valid_from: fromDatetimeLocal(e.target.value) }))
+            }
             style={inputStyle}
           />
         </FieldGroup>
@@ -254,7 +317,9 @@ export default function MerchantPromotions() {
           <input
             type="datetime-local"
             value={toDatetimeLocal(form.valid_until ?? null)}
-            onChange={(e) => setForm((f) => ({ ...f, valid_until: fromDatetimeLocal(e.target.value) }))}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, valid_until: fromDatetimeLocal(e.target.value) }))
+            }
             style={inputStyle}
           />
         </FieldGroup>
@@ -278,5 +343,5 @@ export default function MerchantPromotions() {
         </FieldGroup>
       </FormModal>
     </PageShell>
-  );
+  )
 }

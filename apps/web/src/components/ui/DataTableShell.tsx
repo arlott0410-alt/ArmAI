@@ -1,5 +1,5 @@
-import React from 'react';
-import { theme, spacing } from '../../theme';
+import React from 'react'
+import { theme, spacing } from '../../theme'
 
 /**
  * Wraps a table with consistent toolbar area, loading/empty handling.
@@ -12,11 +12,11 @@ export function DataTableShell({
   children,
   style,
 }: {
-  toolbar?: React.ReactNode;
-  loading?: boolean;
-  empty?: boolean;
-  children: React.ReactNode;
-  style?: React.CSSProperties;
+  toolbar?: React.ReactNode
+  loading?: boolean
+  empty?: boolean
+  children: React.ReactNode
+  style?: React.CSSProperties
 }) {
   return (
     <div style={{ ...style }}>
@@ -46,5 +46,5 @@ export function DataTableShell({
       )}
       {!loading && !empty && children}
     </div>
-  );
+  )
 }

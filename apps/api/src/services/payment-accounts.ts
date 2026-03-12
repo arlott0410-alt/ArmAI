@@ -1,38 +1,54 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
-import { selectPaymentAccountForOrder, getMerchantDefaultCurrency, FALLBACK_CURRENCY } from '@armai/shared';
-import type { CreateMerchantPaymentAccountBody } from '@armai/shared';
-import type { MerchantPaymentAccount } from '@armai/shared';
-import * as merchantService from './merchant.js';
+import type { SupabaseClient } from '@supabase/supabase-js'
+import {
+  selectPaymentAccountForOrder,
+  getMerchantDefaultCurrency,
+  FALLBACK_CURRENCY,
+} from '@armai/shared'
+import type { CreateMerchantPaymentAccountBody } from '@armai/shared'
+import type { MerchantPaymentAccount } from '@armai/shared'
+import * as merchantService from './merchant.js'
 
-export async function listPaymentAccounts(supabase: SupabaseClient, merchantId: string, activeOnly = true) {
+export async function listPaymentAccounts(
+  supabase: SupabaseClient,
+  merchantId: string,
+  activeOnly = true
+) {
   let q = supabase
     .from('merchant_payment_accounts')
     .select('*')
     .eq('merchant_id', merchantId)
-    .order('sort_order');
-  if (activeOnly) q = q.eq('is_active', true);
-  const { data, error } = await q;
-  if (error) throw new Error(error.message);
-  return data ?? [];
+    .order('sort_order')
+  if (activeOnly) q = q.eq('is_active', true)
+  const { data, error } = await q
+  if (error) throw new Error(error.message)
+  return data ?? []
 }
 
-export async function getPaymentAccount(supabase: SupabaseClient, merchantId: string, accountId: string) {
+export async function getPaymentAccount(
+  supabase: SupabaseClient,
+  merchantId: string,
+  accountId: string
+) {
   const { data, error } = await supabase
     .from('merchant_payment_accounts')
     .select('*')
     .eq('id', accountId)
     .eq('merchant_id', merchantId)
-    .single();
-  if (error) throw new Error(error.message);
-  return data;
+    .single()
+  if (error) throw new Error(error.message)
+  return data
 }
 
-export async function createPaymentAccount(supabase: SupabaseClient, merchantId: string, body: CreateMerchantPaymentAccountBody) {
-  const merchant = await merchantService.getMerchantById(supabase, merchantId).catch(() => null);
+export async function createPaymentAccount(
+  supabase: SupabaseClient,
+  merchantId: string,
+  body: CreateMerchantPaymentAccountBody
+) {
+  const merchant = await merchantService.getMerchantById(supabase, merchantId).catch(() => null)
   const defaultCurrency = merchant
     ? getMerchantDefaultCurrency(merchant.default_currency, merchant.default_country)
-    : FALLBACK_CURRENCY;
-  const currency = body.currency ?? defaultCurrency;
+    : FALLBACK_CURRENCY
+  const currency = body.currency ?? defaultCurrency
   const { data, error } = await supabase
     .from('merchant_payment_accounts')
     .insert({
@@ -50,21 +66,26 @@ export async function createPaymentAccount(supabase: SupabaseClient, merchantId:
       notes: body.notes ?? null,
     })
     .select()
-    .single();
-  if (error) throw new Error(error.message);
-  return data;
+    .single()
+  if (error) throw new Error(error.message)
+  return data
 }
 
-export async function updatePaymentAccount(supabase: SupabaseClient, merchantId: string, accountId: string, body: Partial<CreateMerchantPaymentAccountBody>) {
+export async function updatePaymentAccount(
+  supabase: SupabaseClient,
+  merchantId: string,
+  accountId: string,
+  body: Partial<CreateMerchantPaymentAccountBody>
+) {
   const { data, error } = await supabase
     .from('merchant_payment_accounts')
     .update({ ...body, updated_at: new Date().toISOString() })
     .eq('id', accountId)
     .eq('merchant_id', merchantId)
     .select()
-    .single();
-  if (error) throw new Error(error.message);
-  return data;
+    .single()
+  if (error) throw new Error(error.message)
+  return data
 }
 
 /** Select account for a new order (deterministic, auditable). Uses primary or first active. */
@@ -73,6 +94,6 @@ export async function selectAccountForOrder(
   merchantId: string,
   context?: { categoryId?: string | null; totalAmount?: number }
 ): Promise<MerchantPaymentAccount | null> {
-  const accounts = await listPaymentAccounts(supabase, merchantId, true);
-  return selectPaymentAccountForOrder(accounts as MerchantPaymentAccount[], context);
+  const accounts = await listPaymentAccounts(supabase, merchantId, true)
+  return selectPaymentAccountForOrder(accounts as MerchantPaymentAccount[], context)
 }

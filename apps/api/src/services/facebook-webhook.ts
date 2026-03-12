@@ -1,15 +1,22 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
-import { facebookWebhookQuerySchema, facebookWebhookBodySchema } from '@armai/shared';
+import type { SupabaseClient } from '@supabase/supabase-js'
+import { facebookWebhookQuerySchema, facebookWebhookBodySchema } from '@armai/shared'
 
-export type FacebookWebhookQuery = ReturnType<typeof facebookWebhookQuerySchema.parse>;
-export type FacebookWebhookBody = ReturnType<typeof facebookWebhookBodySchema.parse>;
+export type FacebookWebhookQuery = ReturnType<typeof facebookWebhookQuerySchema.parse>
+export type FacebookWebhookBody = ReturnType<typeof facebookWebhookBodySchema.parse>
 
 /**
  * Resolve page_id to merchant_id. Returns null if not found.
  */
-export async function resolvePageToMerchant(supabase: SupabaseClient, pageId: string): Promise<string | null> {
-  const { data } = await supabase.from('facebook_pages').select('merchant_id').eq('page_id', pageId).single();
-  return data?.merchant_id ?? null;
+export async function resolvePageToMerchant(
+  supabase: SupabaseClient,
+  pageId: string
+): Promise<string | null> {
+  const { data } = await supabase
+    .from('facebook_pages')
+    .select('merchant_id')
+    .eq('page_id', pageId)
+    .single()
+  return data?.merchant_id ?? null
 }
 
 /**
@@ -17,15 +24,20 @@ export async function resolvePageToMerchant(supabase: SupabaseClient, pageId: st
  */
 export async function storeWebhookEvent(
   supabase: SupabaseClient,
-  payload: { merchantId: string | null; kind: 'facebook_incoming' | 'facebook_verification'; externalId: string | null; rawPayload: unknown }
+  payload: {
+    merchantId: string | null
+    kind: 'facebook_incoming' | 'facebook_verification'
+    externalId: string | null
+    rawPayload: unknown
+  }
 ) {
   const { error } = await supabase.from('webhook_events').insert({
     merchant_id: payload.merchantId,
     kind: payload.kind,
     external_id: payload.externalId,
     raw_payload: payload.rawPayload as Record<string, unknown>,
-  });
-  if (error) throw new Error(error.message);
+  })
+  if (error) throw new Error(error.message)
 }
 
 /**
@@ -43,15 +55,15 @@ export async function getOrCreateConversation(
     .eq('merchant_id', merchantId)
     .eq('page_id', pageId)
     .eq('customer_psid', customerPsid)
-    .single();
-  if (existing) return existing.id;
+    .single()
+  if (existing) return existing.id
   const { data: inserted, error } = await supabase
     .from('conversations')
     .insert({ merchant_id: merchantId, page_id: pageId, customer_psid: customerPsid })
     .select('id')
-    .single();
-  if (error) throw new Error(error.message);
-  return inserted!.id;
+    .single()
+  if (error) throw new Error(error.message)
+  return inserted!.id
 }
 
 /**
@@ -60,11 +72,11 @@ export async function getOrCreateConversation(
 export async function bufferIncomingMessage(
   supabase: SupabaseClient,
   payload: {
-    merchantId: string;
-    conversationId: string;
-    rawMid: string | null;
-    rawText: string | null;
-    rawAttachments: unknown;
+    merchantId: string
+    conversationId: string
+    rawMid: string | null
+    rawText: string | null
+    rawAttachments: unknown
   }
 ) {
   const { error } = await supabase.from('message_buffers').insert({
@@ -73,6 +85,6 @@ export async function bufferIncomingMessage(
     raw_mid: payload.rawMid,
     raw_text: payload.rawText,
     raw_attachments: payload.rawAttachments as Record<string, unknown>[] | null,
-  });
-  if (error) throw new Error(error.message);
+  })
+  if (error) throw new Error(error.message)
 }

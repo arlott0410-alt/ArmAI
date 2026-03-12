@@ -32,5 +32,8 @@ npm-debug.log*
 coverage/
 .nyc_output/
 
+# ESLint
+.eslintcache
+
 # Misc
 *.local

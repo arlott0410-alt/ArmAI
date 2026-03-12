@@ -1,12 +1,12 @@
-import React from 'react';
-import { theme } from '../../theme';
+import React from 'react'
+import { theme } from '../../theme'
 
 export function InlineInstructionList({
   steps,
   style,
 }: {
-  steps: string[];
-  style?: React.CSSProperties;
+  steps: string[]
+  style?: React.CSSProperties
 }) {
   return (
     <ol
@@ -20,8 +20,10 @@ export function InlineInstructionList({
       }}
     >
       {steps.map((step, i) => (
-        <li key={i} style={{ marginBottom: 4 }}>{step}</li>
+        <li key={i} style={{ marginBottom: 4 }}>
+          {step}
+        </li>
       ))}
     </ol>
-  );
+  )
 }

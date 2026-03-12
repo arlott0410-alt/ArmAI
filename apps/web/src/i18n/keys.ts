@@ -28,7 +28,6 @@ export const I18N_KEYS = [
   'kpi.readyToShip',
   'kpi.activeProducts',
   'kpi.paymentAccounts',
-] as const;
+] as const
 
-export type I18nKey = (typeof I18N_KEYS)[number];
-
+export type I18nKey = (typeof I18N_KEYS)[number]

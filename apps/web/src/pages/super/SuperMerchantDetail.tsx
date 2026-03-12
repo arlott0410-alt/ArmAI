@@ -1,56 +1,72 @@
-import { useEffect, useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
-import { superApi, type SuperMerchantDetailResponse } from '../../lib/api';
-import { PageShell, Card, CardHeader, CardBody, Section, EmptyState, StatusBadge } from '../../components/ui';
-import { theme } from '../../theme';
+import { useEffect, useState } from 'react'
+import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useAuth } from '../../contexts/AuthContext'
+import { superApi, type SuperMerchantDetailResponse } from '../../lib/api'
+import {
+  PageShell,
+  Card,
+  CardHeader,
+  CardBody,
+  Section,
+  EmptyState,
+  StatusBadge,
+} from '../../components/ui'
+import { theme } from '../../theme'
 
 export default function SuperMerchantDetail() {
-  const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
-  const { user } = useAuth();
-  const [data, setData] = useState<SuperMerchantDetailResponse | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [note, setNote] = useState('');
-  const [savingNote, setSavingNote] = useState(false);
-  const token = user?.accessToken ?? null;
+  const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
+  const { user } = useAuth()
+  const [data, setData] = useState<SuperMerchantDetailResponse | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [note, setNote] = useState('')
+  const [savingNote, setSavingNote] = useState(false)
+  const token = user?.accessToken ?? null
 
   useEffect(() => {
-    if (!token || !id) return;
-    superApi.merchant(token, id).then(setData).catch((e) => setError(e.message));
-  }, [token, id]);
+    if (!token || !id) return
+    superApi
+      .merchant(token, id)
+      .then(setData)
+      .catch((e) => setError(e.message))
+  }, [token, id])
 
   const handleAddNote = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!token || !id || !note.trim()) return;
-    setSavingNote(true);
+    e.preventDefault()
+    if (!token || !id || !note.trim()) return
+    setSavingNote(true)
     try {
-      await superApi.addNote(token, id, { note: note.trim() });
-      setNote('');
-      const updated = await superApi.merchant(token, id);
-      setData(updated);
+      await superApi.addNote(token, id, { note: note.trim() })
+      setNote('')
+      const updated = await superApi.merchant(token, id)
+      setData(updated)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed');
+      setError(err instanceof Error ? err.message : 'Failed')
     } finally {
-      setSavingNote(false);
+      setSavingNote(false)
     }
-  };
+  }
 
   const handleSupport = async () => {
-    if (!token || !id) return;
+    if (!token || !id) return
     try {
-      await superApi.supportStart(token, id);
-      navigate(`/super/support?merchantId=${id}`);
+      await superApi.supportStart(token, id)
+      navigate(`/super/support?merchantId=${id}`)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed');
+      setError(err instanceof Error ? err.message : 'Failed')
     }
-  };
+  }
 
-  if (error) return <p style={{ color: theme.danger }}>{error}</p>;
-  if (!data) return <p style={{ color: theme.textSecondary }}>Loading...</p>;
+  if (error) return <p style={{ color: theme.danger }}>{error}</p>
+  if (!data) return <p style={{ color: theme.textSecondary }}>Loading...</p>
 
-  const merchant = data.merchant as { id: string; name: string; slug: string; billing_status: string };
-  const plan = data.plan as Record<string, unknown> | null;
+  const merchant = data.merchant as {
+    id: string
+    name: string
+    slug: string
+    billing_status: string
+  }
+  const plan = data.plan as Record<string, unknown> | null
 
   return (
     <PageShell
@@ -58,19 +74,45 @@ export default function SuperMerchantDetail() {
       description={merchant.slug}
       breadcrumb={<Link to="/super/merchants">Merchants</Link>}
       actions={
-        <button type="button" onClick={handleSupport} style={{ padding: '10px 18px', background: theme.primary, color: theme.background, border: 0, borderRadius: 6, fontWeight: 600, fontSize: 13 }}>
+        <button
+          type="button"
+          onClick={handleSupport}
+          style={{
+            padding: '10px 18px',
+            background: theme.primary,
+            color: theme.background,
+            border: 0,
+            borderRadius: 6,
+            fontWeight: 600,
+            fontSize: 13,
+          }}
+        >
           Open support (read-only)
         </button>
       }
     >
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 24 }}>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+          gap: 24,
+        }}
+      >
         <Card>
           <CardHeader title="Summary" />
           <CardBody>
-            <p style={{ margin: '0 0 8px', color: theme.text }}><strong>Slug:</strong> {merchant.slug}</p>
-            <p style={{ margin: '0 0 8px', color: theme.text }}><strong>Status:</strong> <StatusBadge status={merchant.billing_status} /></p>
-            <p style={{ margin: '0 0 8px', color: theme.text }}><strong>Products:</strong> {data.productCount}</p>
-            <p style={{ margin: 0, color: theme.text }}><strong>Payment accounts:</strong> {data.paymentAccountCount}</p>
+            <p style={{ margin: '0 0 8px', color: theme.text }}>
+              <strong>Slug:</strong> {merchant.slug}
+            </p>
+            <p style={{ margin: '0 0 8px', color: theme.text }}>
+              <strong>Status:</strong> <StatusBadge status={merchant.billing_status} />
+            </p>
+            <p style={{ margin: '0 0 8px', color: theme.text }}>
+              <strong>Products:</strong> {data.productCount}
+            </p>
+            <p style={{ margin: 0, color: theme.text }}>
+              <strong>Payment accounts:</strong> {data.paymentAccountCount}
+            </p>
           </CardBody>
         </Card>
 
@@ -79,10 +121,24 @@ export default function SuperMerchantDetail() {
           <CardBody>
             {plan != null ? (
               <>
-                <p style={{ margin: '0 0 8px', color: theme.text }}><strong>Plan:</strong> {String(plan.plan_code ?? '—')}</p>
-                <p style={{ margin: '0 0 8px', color: theme.text }}><strong>Monthly:</strong> ${Number(plan.monthly_price_usd ?? 0)}</p>
-                <p style={{ margin: '0 0 8px', color: theme.text }}><strong>Next billing:</strong> {plan.next_billing_at ? new Date(String(plan.next_billing_at)).toLocaleDateString() : '—'}</p>
-                <p style={{ margin: 0, color: theme.text }}><strong>Last paid:</strong> {plan.last_paid_at ? new Date(String(plan.last_paid_at)).toLocaleDateString() : '—'}</p>
+                <p style={{ margin: '0 0 8px', color: theme.text }}>
+                  <strong>Plan:</strong> {String(plan.plan_code ?? '—')}
+                </p>
+                <p style={{ margin: '0 0 8px', color: theme.text }}>
+                  <strong>Monthly:</strong> ${Number(plan.monthly_price_usd ?? 0)}
+                </p>
+                <p style={{ margin: '0 0 8px', color: theme.text }}>
+                  <strong>Next billing:</strong>{' '}
+                  {plan.next_billing_at
+                    ? new Date(String(plan.next_billing_at)).toLocaleDateString()
+                    : '—'}
+                </p>
+                <p style={{ margin: 0, color: theme.text }}>
+                  <strong>Last paid:</strong>{' '}
+                  {plan.last_paid_at
+                    ? new Date(String(plan.last_paid_at)).toLocaleDateString()
+                    : '—'}
+                </p>
               </>
             ) : (
               <p style={{ margin: 0, color: theme.textMuted }}>No plan record.</p>
@@ -95,15 +151,40 @@ export default function SuperMerchantDetail() {
         <Card>
           <CardBody>
             <form onSubmit={handleAddNote} style={{ marginBottom: 16 }}>
-              <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Add internal note…" rows={2} style={{ width: '100%', padding: 10 }} />
-              <button type="submit" disabled={savingNote || !note.trim()} style={{ marginTop: 8, padding: '10px 18px', background: theme.primary, color: theme.background, border: 0, borderRadius: 6, fontWeight: 600 }}>Add note</button>
+              <textarea
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="Add internal note…"
+                rows={2}
+                style={{ width: '100%', padding: 10 }}
+              />
+              <button
+                type="submit"
+                disabled={savingNote || !note.trim()}
+                style={{
+                  marginTop: 8,
+                  padding: '10px 18px',
+                  background: theme.primary,
+                  color: theme.background,
+                  border: 0,
+                  borderRadius: 6,
+                  fontWeight: 600,
+                }}
+              >
+                Add note
+              </button>
             </form>
             {data.notes.length === 0 ? (
               <EmptyState title="No notes" />
             ) : (
               <ul style={{ margin: 0, paddingLeft: 20, fontSize: 14 }}>
                 {data.notes.map((n) => (
-                  <li key={n.id} style={{ marginBottom: 8 }}>{n.note} <span style={{ color: '#9ca3af' }}>— {new Date(n.created_at).toLocaleString()}</span></li>
+                  <li key={n.id} style={{ marginBottom: 8 }}>
+                    {n.note}{' '}
+                    <span style={{ color: '#9ca3af' }}>
+                      — {new Date(n.created_at).toLocaleString()}
+                    </span>
+                  </li>
                 ))}
               </ul>
             )}
@@ -130,9 +211,13 @@ export default function SuperMerchantDetail() {
                   {(data.billingEvents as Record<string, unknown>[]).slice(0, 10).map((e) => (
                     <tr key={String(e.id)} style={{ borderBottom: '1px solid #f3f4f6' }}>
                       <td style={{ padding: 8 }}>{String(e.event_type)}</td>
-                      <td style={{ padding: 8 }}>{Number(e.amount)} {String(e.currency)}</td>
+                      <td style={{ padding: 8 }}>
+                        {Number(e.amount)} {String(e.currency)}
+                      </td>
                       <td style={{ padding: 8 }}>{String(e.status)}</td>
-                      <td style={{ padding: 8 }}>{e.created_at ? new Date(String(e.created_at)).toLocaleDateString() : '—'}</td>
+                      <td style={{ padding: 8 }}>
+                        {e.created_at ? new Date(String(e.created_at)).toLocaleDateString() : '—'}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -149,14 +234,16 @@ export default function SuperMerchantDetail() {
               <EmptyState title="No support access" />
             ) : (
               <ul style={{ margin: 0, paddingLeft: 20, fontSize: 14 }}>
-                {(data.supportAccessHistory as { started_at: string }[]).slice(0, 10).map((s, i) => (
-                  <li key={i}>{new Date(s.started_at).toLocaleString()}</li>
-                ))}
+                {(data.supportAccessHistory as { started_at: string }[])
+                  .slice(0, 10)
+                  .map((s, i) => (
+                    <li key={i}>{new Date(s.started_at).toLocaleString()}</li>
+                  ))}
               </ul>
             )}
           </CardBody>
         </Card>
       </Section>
     </PageShell>
-  );
+  )
 }

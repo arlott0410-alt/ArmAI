@@ -1,15 +1,15 @@
-import { useCallback, useEffect, useState } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
+import { useCallback, useEffect, useState } from 'react'
+import { useAuth } from '../../contexts/AuthContext'
 import {
   knowledgeApi,
   type FaqRow,
   type CreateFaqBody,
   type KnowledgeEntryRow,
   type CreateKnowledgeEntryBody,
-} from '../../lib/api';
-import { PageShell, Card, CardBody, EmptyState } from '../../components/ui';
-import { FormModal, SaveCancelFooter, FieldGroup } from '../../components/merchant';
-import { theme } from '../../theme';
+} from '../../lib/api'
+import { PageShell, Card, CardBody, EmptyState } from '../../components/ui'
+import { FormModal, SaveCancelFooter, FieldGroup } from '../../components/merchant'
+import { theme } from '../../theme'
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
@@ -19,105 +19,125 @@ const inputStyle: React.CSSProperties = {
   borderRadius: 6,
   color: theme.text,
   fontSize: 13,
-};
+}
 
-type Tab = 'faqs' | 'entries';
+type Tab = 'faqs' | 'entries'
 
 export default function MerchantKnowledge() {
-  const { user } = useAuth();
-  const token = user?.accessToken ?? null;
+  const { user } = useAuth()
+  const token = user?.accessToken ?? null
 
-  const [tab, setTab] = useState<Tab>('faqs');
-  const [faqs, setFaqs] = useState<FaqRow[]>([]);
-  const [entries, setEntries] = useState<KnowledgeEntryRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [tab, setTab] = useState<Tab>('faqs')
+  const [faqs, setFaqs] = useState<FaqRow[]>([])
+  const [entries, setEntries] = useState<KnowledgeEntryRow[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const [faqModalOpen, setFaqModalOpen] = useState(false);
-  const [editingFaq, setEditingFaq] = useState<FaqRow | null>(null);
-  const [faqForm, setFaqForm] = useState<CreateFaqBody>({ question: '', answer: '', keywords: null, sort_order: 0, is_active: true });
-  const [faqSaving, setFaqSaving] = useState(false);
-  const [faqFormError, setFaqFormError] = useState<string | null>(null);
+  const [faqModalOpen, setFaqModalOpen] = useState(false)
+  const [editingFaq, setEditingFaq] = useState<FaqRow | null>(null)
+  const [faqForm, setFaqForm] = useState<CreateFaqBody>({
+    question: '',
+    answer: '',
+    keywords: null,
+    sort_order: 0,
+    is_active: true,
+  })
+  const [faqSaving, setFaqSaving] = useState(false)
+  const [faqFormError, setFaqFormError] = useState<string | null>(null)
 
-  const [entryModalOpen, setEntryModalOpen] = useState(false);
-  const [editingEntry, setEditingEntry] = useState<KnowledgeEntryRow | null>(null);
-  const [entryForm, setEntryForm] = useState<CreateKnowledgeEntryBody>({ type: 'general', title: '', content: '', keywords: null, priority: 0, is_active: true });
-  const [entrySaving, setEntrySaving] = useState(false);
-  const [entryFormError, setEntryFormError] = useState<string | null>(null);
+  const [entryModalOpen, setEntryModalOpen] = useState(false)
+  const [editingEntry, setEditingEntry] = useState<KnowledgeEntryRow | null>(null)
+  const [entryForm, setEntryForm] = useState<CreateKnowledgeEntryBody>({
+    type: 'general',
+    title: '',
+    content: '',
+    keywords: null,
+    priority: 0,
+    is_active: true,
+  })
+  const [entrySaving, setEntrySaving] = useState(false)
+  const [entryFormError, setEntryFormError] = useState<string | null>(null)
 
   const load = useCallback(() => {
-    if (!token) return;
-    setLoading(true);
-    setError(null);
+    if (!token) return
+    setLoading(true)
+    setError(null)
     Promise.all([
       knowledgeApi.faqs(token, { activeOnly: false }),
       knowledgeApi.entries(token, { activeOnly: false }),
     ])
       .then(([f, e]) => {
-        setFaqs(f.faqs);
-        setEntries(e.entries);
+        setFaqs(f.faqs)
+        setEntries(e.entries)
       })
       .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
-  }, [token]);
+      .finally(() => setLoading(false))
+  }, [token])
 
   useEffect(() => {
-    load();
-  }, [load]);
+    load()
+  }, [load])
 
   const openFaqCreate = () => {
-    setEditingFaq(null);
-    setFaqForm({ question: '', answer: '', keywords: null, sort_order: 0, is_active: true });
-    setFaqFormError(null);
-    setFaqModalOpen(true);
-  };
+    setEditingFaq(null)
+    setFaqForm({ question: '', answer: '', keywords: null, sort_order: 0, is_active: true })
+    setFaqFormError(null)
+    setFaqModalOpen(true)
+  }
 
   const openFaqEdit = (row: FaqRow) => {
-    setEditingFaq(row);
+    setEditingFaq(row)
     setFaqForm({
       question: row.question,
       answer: row.answer,
       keywords: row.keywords ?? null,
       sort_order: row.sort_order ?? 0,
       is_active: row.is_active,
-    });
-    setFaqFormError(null);
-    setFaqModalOpen(true);
-  };
+    })
+    setFaqFormError(null)
+    setFaqModalOpen(true)
+  }
 
   const saveFaq = async () => {
-    setFaqFormError(null);
+    setFaqFormError(null)
     if (!faqForm.question.trim() || !faqForm.answer.trim()) {
-      setFaqFormError('Question and answer are required.');
-      return;
+      setFaqFormError('Question and answer are required.')
+      return
     }
-    if (!token) return;
-    setFaqSaving(true);
+    if (!token) return
+    setFaqSaving(true)
     try {
       if (editingFaq) {
-        await knowledgeApi.updateFaq(token, editingFaq.id, faqForm);
+        await knowledgeApi.updateFaq(token, editingFaq.id, faqForm)
       } else {
-        await knowledgeApi.createFaq(token, faqForm);
+        await knowledgeApi.createFaq(token, faqForm)
       }
-      setFaqModalOpen(false);
-      setEditingFaq(null);
-      load();
+      setFaqModalOpen(false)
+      setEditingFaq(null)
+      load()
     } catch (e) {
-      setFaqFormError(e instanceof Error ? e.message : 'Save failed');
+      setFaqFormError(e instanceof Error ? e.message : 'Save failed')
     } finally {
-      setFaqSaving(false);
+      setFaqSaving(false)
     }
-  };
+  }
 
   const openEntryCreate = () => {
-    setEditingEntry(null);
-    setEntryForm({ type: 'general', title: '', content: '', keywords: null, priority: 0, is_active: true });
-    setEntryFormError(null);
-    setEntryModalOpen(true);
-  };
+    setEditingEntry(null)
+    setEntryForm({
+      type: 'general',
+      title: '',
+      content: '',
+      keywords: null,
+      priority: 0,
+      is_active: true,
+    })
+    setEntryFormError(null)
+    setEntryModalOpen(true)
+  }
 
   const openEntryEdit = (row: KnowledgeEntryRow) => {
-    setEditingEntry(row);
+    setEditingEntry(row)
     setEntryForm({
       type: row.type,
       title: row.title,
@@ -125,37 +145,38 @@ export default function MerchantKnowledge() {
       keywords: row.keywords ?? null,
       priority: row.priority ?? 0,
       is_active: row.is_active,
-    });
-    setEntryFormError(null);
-    setEntryModalOpen(true);
-  };
+    })
+    setEntryFormError(null)
+    setEntryModalOpen(true)
+  }
 
   const saveEntry = async () => {
-    setEntryFormError(null);
+    setEntryFormError(null)
     if (!entryForm.type.trim() || !entryForm.title.trim() || !entryForm.content.trim()) {
-      setEntryFormError('Type, title, and content are required.');
-      return;
+      setEntryFormError('Type, title, and content are required.')
+      return
     }
-    if (!token) return;
-    setEntrySaving(true);
+    if (!token) return
+    setEntrySaving(true)
     try {
       if (editingEntry) {
-        await knowledgeApi.updateEntry(token, editingEntry.id, entryForm);
+        await knowledgeApi.updateEntry(token, editingEntry.id, entryForm)
       } else {
-        await knowledgeApi.createEntry(token, entryForm);
+        await knowledgeApi.createEntry(token, entryForm)
       }
-      setEntryModalOpen(false);
-      setEditingEntry(null);
-      load();
+      setEntryModalOpen(false)
+      setEditingEntry(null)
+      load()
     } catch (e) {
-      setEntryFormError(e instanceof Error ? e.message : 'Save failed');
+      setEntryFormError(e instanceof Error ? e.message : 'Save failed')
     } finally {
-      setEntrySaving(false);
+      setEntrySaving(false)
     }
-  };
+  }
 
-  if (error) return <p style={{ color: theme.danger }}>{error}</p>;
-  if (loading && faqs.length === 0 && entries.length === 0) return <p style={{ color: theme.textSecondary }}>Loading…</p>;
+  if (error) return <p style={{ color: theme.danger }}>{error}</p>
+  if (loading && faqs.length === 0 && entries.length === 0)
+    return <p style={{ color: theme.textSecondary }}>Loading…</p>
 
   const tabStyle = (t: Tab) => ({
     padding: '8px 16px',
@@ -166,7 +187,7 @@ export default function MerchantKnowledge() {
     fontWeight: 600,
     fontSize: 13,
     cursor: 'pointer',
-  });
+  })
 
   return (
     <PageShell
@@ -248,9 +269,39 @@ export default function MerchantKnowledge() {
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead>
                   <tr style={{ textAlign: 'left', borderBottom: `1px solid ${theme.borderMuted}` }}>
-                    <th style={{ padding: '12px 16px', color: theme.textMuted, fontWeight: 600, fontSize: 11, textTransform: 'uppercase' }}>Question</th>
-                    <th style={{ padding: '12px 16px', color: theme.textMuted, fontWeight: 600, fontSize: 11, textTransform: 'uppercase' }}>Order</th>
-                    <th style={{ padding: '12px 16px', color: theme.textMuted, fontWeight: 600, fontSize: 11, textTransform: 'uppercase' }}>Active</th>
+                    <th
+                      style={{
+                        padding: '12px 16px',
+                        color: theme.textMuted,
+                        fontWeight: 600,
+                        fontSize: 11,
+                        textTransform: 'uppercase',
+                      }}
+                    >
+                      Question
+                    </th>
+                    <th
+                      style={{
+                        padding: '12px 16px',
+                        color: theme.textMuted,
+                        fontWeight: 600,
+                        fontSize: 11,
+                        textTransform: 'uppercase',
+                      }}
+                    >
+                      Order
+                    </th>
+                    <th
+                      style={{
+                        padding: '12px 16px',
+                        color: theme.textMuted,
+                        fontWeight: 600,
+                        fontSize: 11,
+                        textTransform: 'uppercase',
+                      }}
+                    >
+                      Active
+                    </th>
                     <th style={{ width: 80 }}></th>
                   </tr>
                 </thead>
@@ -258,13 +309,22 @@ export default function MerchantKnowledge() {
                   {faqs.map((f) => (
                     <tr key={f.id} style={{ borderBottom: `1px solid ${theme.borderMuted}` }}>
                       <td style={{ padding: '12px 16px', fontWeight: 500 }}>{f.question}</td>
-                      <td style={{ padding: '12px 16px', color: theme.textSecondary }}>{f.sort_order}</td>
+                      <td style={{ padding: '12px 16px', color: theme.textSecondary }}>
+                        {f.sort_order}
+                      </td>
                       <td style={{ padding: '12px 16px' }}>{f.is_active ? 'Yes' : 'No'}</td>
                       <td style={{ padding: '12px 16px' }}>
                         <button
                           type="button"
                           onClick={() => openFaqEdit(f)}
-                          style={{ background: 'none', border: 0, color: theme.primary, cursor: 'pointer', fontSize: 13, fontWeight: 500 }}
+                          style={{
+                            background: 'none',
+                            border: 0,
+                            color: theme.primary,
+                            cursor: 'pointer',
+                            fontSize: 13,
+                            fontWeight: 500,
+                          }}
                         >
                           Edit
                         </button>
@@ -306,10 +366,50 @@ export default function MerchantKnowledge() {
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead>
                   <tr style={{ textAlign: 'left', borderBottom: `1px solid ${theme.borderMuted}` }}>
-                    <th style={{ padding: '12px 16px', color: theme.textMuted, fontWeight: 600, fontSize: 11, textTransform: 'uppercase' }}>Type</th>
-                    <th style={{ padding: '12px 16px', color: theme.textMuted, fontWeight: 600, fontSize: 11, textTransform: 'uppercase' }}>Title</th>
-                    <th style={{ padding: '12px 16px', color: theme.textMuted, fontWeight: 600, fontSize: 11, textTransform: 'uppercase' }}>Priority</th>
-                    <th style={{ padding: '12px 16px', color: theme.textMuted, fontWeight: 600, fontSize: 11, textTransform: 'uppercase' }}>Active</th>
+                    <th
+                      style={{
+                        padding: '12px 16px',
+                        color: theme.textMuted,
+                        fontWeight: 600,
+                        fontSize: 11,
+                        textTransform: 'uppercase',
+                      }}
+                    >
+                      Type
+                    </th>
+                    <th
+                      style={{
+                        padding: '12px 16px',
+                        color: theme.textMuted,
+                        fontWeight: 600,
+                        fontSize: 11,
+                        textTransform: 'uppercase',
+                      }}
+                    >
+                      Title
+                    </th>
+                    <th
+                      style={{
+                        padding: '12px 16px',
+                        color: theme.textMuted,
+                        fontWeight: 600,
+                        fontSize: 11,
+                        textTransform: 'uppercase',
+                      }}
+                    >
+                      Priority
+                    </th>
+                    <th
+                      style={{
+                        padding: '12px 16px',
+                        color: theme.textMuted,
+                        fontWeight: 600,
+                        fontSize: 11,
+                        textTransform: 'uppercase',
+                      }}
+                    >
+                      Active
+                    </th>
                     <th style={{ width: 80 }}></th>
                   </tr>
                 </thead>
@@ -318,13 +418,22 @@ export default function MerchantKnowledge() {
                     <tr key={e.id} style={{ borderBottom: `1px solid ${theme.borderMuted}` }}>
                       <td style={{ padding: '12px 16px', fontWeight: 500 }}>{e.type}</td>
                       <td style={{ padding: '12px 16px' }}>{e.title}</td>
-                      <td style={{ padding: '12px 16px', color: theme.textSecondary }}>{e.priority}</td>
+                      <td style={{ padding: '12px 16px', color: theme.textSecondary }}>
+                        {e.priority}
+                      </td>
                       <td style={{ padding: '12px 16px' }}>{e.is_active ? 'Yes' : 'No'}</td>
                       <td style={{ padding: '12px 16px' }}>
                         <button
                           type="button"
                           onClick={() => openEntryEdit(e)}
-                          style={{ background: 'none', border: 0, color: theme.primary, cursor: 'pointer', fontSize: 13, fontWeight: 500 }}
+                          style={{
+                            background: 'none',
+                            border: 0,
+                            color: theme.primary,
+                            cursor: 'pointer',
+                            fontSize: 13,
+                            fontWeight: 500,
+                          }}
                         >
                           Edit
                         </button>
@@ -340,11 +449,24 @@ export default function MerchantKnowledge() {
 
       <FormModal
         open={faqModalOpen}
-        onClose={() => { setFaqModalOpen(false); setEditingFaq(null); setFaqFormError(null); }}
+        onClose={() => {
+          setFaqModalOpen(false)
+          setEditingFaq(null)
+          setFaqFormError(null)
+        }}
         title={editingFaq ? 'Edit FAQ' : 'Add FAQ'}
-        footer={<SaveCancelFooter onCancel={() => setFaqModalOpen(false)} onSave={saveFaq} saving={faqSaving} saveLabel={editingFaq ? 'Update' : 'Create'} />}
+        footer={
+          <SaveCancelFooter
+            onCancel={() => setFaqModalOpen(false)}
+            onSave={saveFaq}
+            saving={faqSaving}
+            saveLabel={editingFaq ? 'Update' : 'Create'}
+          />
+        }
       >
-        {faqFormError && <p style={{ color: theme.danger, marginBottom: 12, fontSize: 13 }}>{faqFormError}</p>}
+        {faqFormError && (
+          <p style={{ color: theme.danger, marginBottom: 12, fontSize: 13 }}>{faqFormError}</p>
+        )}
         <FieldGroup label="Question" hint="Required.">
           <input
             type="text"
@@ -393,11 +515,24 @@ export default function MerchantKnowledge() {
 
       <FormModal
         open={entryModalOpen}
-        onClose={() => { setEntryModalOpen(false); setEditingEntry(null); setEntryFormError(null); }}
+        onClose={() => {
+          setEntryModalOpen(false)
+          setEditingEntry(null)
+          setEntryFormError(null)
+        }}
         title={editingEntry ? 'Edit knowledge entry' : 'Add knowledge entry'}
-        footer={<SaveCancelFooter onCancel={() => setEntryModalOpen(false)} onSave={saveEntry} saving={entrySaving} saveLabel={editingEntry ? 'Update' : 'Create'} />}
+        footer={
+          <SaveCancelFooter
+            onCancel={() => setEntryModalOpen(false)}
+            onSave={saveEntry}
+            saving={entrySaving}
+            saveLabel={editingEntry ? 'Update' : 'Create'}
+          />
+        }
       >
-        {entryFormError && <p style={{ color: theme.danger, marginBottom: 12, fontSize: 13 }}>{entryFormError}</p>}
+        {entryFormError && (
+          <p style={{ color: theme.danger, marginBottom: 12, fontSize: 13 }}>{entryFormError}</p>
+        )}
         <FieldGroup label="Type" hint="e.g. general, policy, product_info.">
           <input
             type="text"
@@ -453,5 +588,5 @@ export default function MerchantKnowledge() {
         </FieldGroup>
       </FormModal>
     </PageShell>
-  );
+  )
 }

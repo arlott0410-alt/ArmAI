@@ -11,7 +11,7 @@ export type CacheScope =
   | 'faqs'
   | 'promotions'
   | 'knowledge_entries'
-  | 'cod_settings';
+  | 'cod_settings'
 
 const TTL_MS: Record<CacheScope, number> = {
   merchant_config: 5 * 60 * 1000,
@@ -21,59 +21,59 @@ const TTL_MS: Record<CacheScope, number> = {
   promotions: 3 * 60 * 1000,
   knowledge_entries: 3 * 60 * 1000,
   cod_settings: 5 * 60 * 1000,
-};
-
-interface CacheEntry<T> {
-  value: T;
-  expiresAt: number;
 }
 
-const store = new Map<string, CacheEntry<unknown>>();
+interface CacheEntry<T> {
+  value: T
+  expiresAt: number
+}
+
+const store = new Map<string, CacheEntry<unknown>>()
 
 function key(merchantId: string, scope: CacheScope): string {
-  return `m:${merchantId}:${scope}`;
+  return `m:${merchantId}:${scope}`
 }
 
 export function get<T>(merchantId: string, scope: CacheScope): T | null {
-  const k = key(merchantId, scope);
-  const entry = store.get(k) as CacheEntry<T> | undefined;
+  const k = key(merchantId, scope)
+  const entry = store.get(k) as CacheEntry<T> | undefined
   if (!entry || Date.now() > entry.expiresAt) {
-    if (entry) store.delete(k);
-    return null;
+    if (entry) store.delete(k)
+    return null
   }
-  return entry.value;
+  return entry.value
 }
 
 export function set<T>(merchantId: string, scope: CacheScope, value: T): void {
-  const k = key(merchantId, scope);
+  const k = key(merchantId, scope)
   store.set(k, {
     value,
     expiresAt: Date.now() + TTL_MS[scope],
-  });
+  })
 }
 
 /** Invalidate one scope for a merchant. */
 export function invalidate(merchantId: string, scope: CacheScope): void {
-  store.delete(key(merchantId, scope));
+  store.delete(key(merchantId, scope))
 }
 
 /** Invalidate all cache for a merchant (e.g. settings updated). */
 export function invalidateMerchant(merchantId: string): void {
   for (const sc of Object.keys(TTL_MS) as CacheScope[]) {
-    store.delete(key(merchantId, sc));
+    store.delete(key(merchantId, sc))
   }
 }
 
 /** Invalidate product/knowledge-related caches only. */
 export function invalidateCatalogAndKnowledge(merchantId: string): void {
-  invalidate(merchantId, 'products');
-  invalidate(merchantId, 'categories');
-  invalidate(merchantId, 'faqs');
-  invalidate(merchantId, 'promotions');
-  invalidate(merchantId, 'knowledge_entries');
+  invalidate(merchantId, 'products')
+  invalidate(merchantId, 'categories')
+  invalidate(merchantId, 'faqs')
+  invalidate(merchantId, 'promotions')
+  invalidate(merchantId, 'knowledge_entries')
 }
 
 /** For metrics: approximate hit check without consuming. */
 export function hasValidEntry(merchantId: string, scope: CacheScope): boolean {
-  return get(merchantId, scope) !== null;
+  return get(merchantId, scope) !== null
 }

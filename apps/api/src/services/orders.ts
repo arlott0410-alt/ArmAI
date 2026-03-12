@@ -1,27 +1,32 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
-import { ORDER_STATUS, MATCHING_RESULT_STATUS, PAYMENT_STATUS, FULFILLMENT_STATUS } from '@armai/shared';
+import type { SupabaseClient } from '@supabase/supabase-js'
+import {
+  ORDER_STATUS,
+  MATCHING_RESULT_STATUS,
+  PAYMENT_STATUS,
+  FULFILLMENT_STATUS,
+} from '@armai/shared'
 
-const DEFAULT_ORDERS_LIMIT = 50;
-const MAX_ORDERS_LIMIT = 100;
+const DEFAULT_ORDERS_LIMIT = 50
+const MAX_ORDERS_LIMIT = 100
 
 export async function listOrders(
   supabase: SupabaseClient,
   merchantId: string,
   opts: { status?: string; fulfillment_status?: string; limit?: number; offset?: number } = {}
 ) {
-  const limit = Math.min(opts.limit ?? DEFAULT_ORDERS_LIMIT, MAX_ORDERS_LIMIT);
-  const offset = opts.offset ?? 0;
+  const limit = Math.min(opts.limit ?? DEFAULT_ORDERS_LIMIT, MAX_ORDERS_LIMIT)
+  const offset = opts.offset ?? 0
   let q = supabase
     .from('orders')
     .select('*')
     .eq('merchant_id', merchantId)
-    .order('created_at', { ascending: false });
-  if (opts.status) q = q.eq('status', opts.status);
-  if (opts.fulfillment_status) q = q.eq('fulfillment_status', opts.fulfillment_status);
-  q = q.range(offset, offset + limit - 1);
-  const { data, error } = await q;
-  if (error) throw new Error(error.message);
-  return data ?? [];
+    .order('created_at', { ascending: false })
+  if (opts.status) q = q.eq('status', opts.status)
+  if (opts.fulfillment_status) q = q.eq('fulfillment_status', opts.fulfillment_status)
+  q = q.range(offset, offset + limit - 1)
+  const { data, error } = await q
+  if (error) throw new Error(error.message)
+  return data ?? []
 }
 
 export async function getOrder(supabase: SupabaseClient, merchantId: string, orderId: string) {
@@ -30,9 +35,9 @@ export async function getOrder(supabase: SupabaseClient, merchantId: string, ord
     .select('*')
     .eq('id', orderId)
     .eq('merchant_id', merchantId)
-    .single();
-  if (error) throw new Error(error.message);
-  return data;
+    .single()
+  if (error) throw new Error(error.message)
+  return data
 }
 
 /**
@@ -49,22 +54,23 @@ export async function confirmMatch(
     .select('id, order_id, status')
     .eq('id', matchingResultId)
     .eq('merchant_id', merchantId)
-    .single();
-  if (fetchErr || !mr) throw new Error('Matching result not found');
-  const newStatus = confirm ? ('confirmed' as const) : ('rejected' as const);
+    .single()
+  if (fetchErr || !mr) throw new Error('Matching result not found')
+  const newStatus = confirm ? ('confirmed' as const) : ('rejected' as const)
   const { error: updateMrErr } = await supabase
     .from('matching_results')
     .update({ status: newStatus, updated_at: new Date().toISOString() })
-    .eq('id', matchingResultId);
-  if (updateMrErr) throw new Error(updateMrErr.message);
+    .eq('id', matchingResultId)
+  if (updateMrErr) throw new Error(updateMrErr.message)
   if (confirm) {
     const { data: orderRow } = await supabase
       .from('orders')
       .select('fulfillment_status')
       .eq('id', mr.order_id)
       .eq('merchant_id', merchantId)
-      .single();
-    const fulfillmentStatus = orderRow?.fulfillment_status == null ? FULFILLMENT_STATUS.PENDING_FULFILLMENT : undefined;
+      .single()
+    const fulfillmentStatus =
+      orderRow?.fulfillment_status == null ? FULFILLMENT_STATUS.PENDING_FULFILLMENT : undefined
     await supabase
       .from('orders')
       .update({
@@ -74,7 +80,7 @@ export async function confirmMatch(
         updated_at: new Date().toISOString(),
       })
       .eq('id', mr.order_id)
-      .eq('merchant_id', merchantId);
+      .eq('merchant_id', merchantId)
   }
-  return { success: true, orderId: mr.order_id };
+  return { success: true, orderId: mr.order_id }
 }

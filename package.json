@@ -11,13 +11,44 @@
     "build:api": "npm run build -w apps/api",
     "build:web": "npm run build -w apps/web",
     "build:shared": "npm run build -w packages/shared",
-    "test": "npm run test --workspaces --if-present",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest run --coverage",
+    "test:run": "vitest run",
     "test:shared": "npm run test -w packages/shared",
     "test:api": "npm run test -w apps/api",
-    "lint": "npm run lint --workspaces --if-present",
-    "typecheck": "npm run typecheck --workspaces --if-present"
+    "lint": "eslint . --cache --max-warnings 999",
+    "lint:fix": "eslint . --cache --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "prepare": "husky"
   },
   "engines": {
     "node": ">=18"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": "eslint --fix",
+    "*.{ts,tsx,js,jsx,css,md,json}": "prettier --write"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.4",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@vitest/coverage-v8": "^2.1.9",
+    "@vitest/ui": "^2.1.9",
+    "eslint": "^9.39.4",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "globals": "^17.4.0",
+    "husky": "^9.1.7",
+    "jsdom": "^28.1.0",
+    "lint-staged": "^16.3.3",
+    "prettier": "^3.8.1",
+    "typescript-eslint": "^8.57.0",
+    "vitest": "^2.1.9",
+    "vitest-mock-extended": "^3.1.0"
   }
 }
