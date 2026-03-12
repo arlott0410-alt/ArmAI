@@ -4,23 +4,56 @@ import { useAuth } from '../contexts/AuthContext'
 import { useI18n } from '../i18n/I18nProvider'
 import { plansApi, subscribeApi, subscriptionApi, type PlanPublic } from '../lib/api'
 
-const KIP_FORMAT = new Intl.NumberFormat('lo-LA', { maximumFractionDigits: 0 })
+const LAK_FORMAT = new Intl.NumberFormat('lo-LA', { maximumFractionDigits: 0 })
+const STANDARD_PLAN_CODE = 'standard'
+const STANDARD_PRICE_LAK = 1_999_000
+
+const STANDARD_FEATURES = [
+  'Core AI features',
+  'Unlimited users',
+  'Analytics',
+  'Priority support',
+  'All channels (Facebook, WhatsApp, Telegram)',
+  'Bank sync & payment config',
+  'Knowledge base & promotions',
+]
 
 export default function Pricing() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const { t } = useI18n()
-  const [plans, setPlans] = useState<PlanPublic[]>([])
+  const [plan, setPlan] = useState<PlanPublic | null>(null)
   const [loading, setLoading] = useState(true)
   const [sub, setSub] = useState<{ planCode: string; nextBillingAt: string | null } | null>(null)
-  const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null)
+  const [modalOpen, setModalOpen] = useState(false)
+  const [submitLoading, setSubmitLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [pendingMessage, setPendingMessage] = useState<string | null>(null)
 
   useEffect(() => {
     plansApi
       .list()
-      .then((r) => setPlans(r.plans))
-      .catch(() => setPlans([]))
+      .then((r) => {
+        const p = r.plans.find((x) => x.code === STANDARD_PLAN_CODE)
+        setPlan(
+          p ?? {
+            code: STANDARD_PLAN_CODE,
+            name: 'Standard',
+            priceLak: STANDARD_PRICE_LAK,
+            features: STANDARD_FEATURES,
+            maxUsers: null,
+          }
+        )
+      })
+      .catch(() =>
+        setPlan({
+          code: STANDARD_PLAN_CODE,
+          name: 'Standard',
+          priceLak: STANDARD_PRICE_LAK,
+          features: STANDARD_FEATURES,
+          maxUsers: null,
+        })
+      )
       .finally(() => setLoading(false))
   }, [])
 
@@ -35,32 +68,43 @@ export default function Pricing() {
       .catch(() => {})
   }, [user?.accessToken])
 
-  const handleChoosePlan = async (planCode: string) => {
+  const handleSubscribeOrRenew = async () => {
     if (!user?.accessToken) {
       navigate('/login')
       return
     }
     setError(null)
-    setCheckoutLoading(planCode)
+    setPendingMessage(null)
+    setSubmitLoading(true)
     const base = window.location.origin
     try {
       const res = await subscribeApi.createCheckout(user.accessToken, {
-        plan_code: planCode,
-        success_url: `${base}/checkout/success?plan=${planCode}`,
+        plan_code: STANDARD_PLAN_CODE,
+        success_url: `${base}/pricing`,
         cancel_url: `${base}/pricing`,
         customer_email: user.email ?? undefined,
       })
-      if (res.checkout_url) {
-        window.location.href = res.checkout_url
-        return
+      if (res.payment_id) {
+        setPendingMessage(t('pricing.pendingPayment'))
+        setModalOpen(true)
+      } else {
+        setError('Could not create payment')
       }
-      setError('Could not start checkout')
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Checkout failed')
+      setError(e instanceof Error ? e.message : 'Request failed')
     } finally {
-      setCheckoutLoading(null)
+      setSubmitLoading(false)
     }
   }
+
+  const isActive = sub?.planCode === STANDARD_PLAN_CODE && sub?.nextBillingAt
+  const expiryDate = sub?.nextBillingAt
+    ? new Date(sub.nextBillingAt).toLocaleDateString('lo-LA', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      })
+    : ''
 
   if (loading) {
     return (
@@ -72,11 +116,11 @@ export default function Pricing() {
 
   return (
     <div className="min-h-screen bg-[var(--armai-bg)] p-4 md:p-8">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-2xl mx-auto">
         <h1 className="text-2xl font-semibold text-[var(--armai-text)] mb-2">
           {t('pricing.title')}
         </h1>
-        <p className="text-[var(--armai-text-secondary)] mb-8">{t('pricing.subtitle')}</p>
+        <p className="text-[var(--armai-text-secondary)] mb-8">{t('pricing.subtitleSingle')}</p>
 
         {error && (
           <div
@@ -87,52 +131,85 @@ export default function Pricing() {
           </div>
         )}
 
-        <div className="grid md:grid-cols-2 gap-6">
-          {plans.map((plan) => {
-            const isCurrent = sub?.planCode === plan.code
-            return (
-              <div
-                key={plan.code}
-                className="rounded-xl border border-[var(--armai-border)] bg-[var(--armai-surface)] p-6 flex flex-col glass-card shadow-lg hover:shadow-xl transition-shadow"
+        <div className="rounded-xl border border-[var(--armai-border)] bg-[var(--armai-surface)] p-6 glass-card shadow-lg">
+          <h2 className="text-lg font-semibold text-[var(--armai-text)] mb-1">
+            {plan?.name ?? t('plan.standard')}
+          </h2>
+          <div className="flex items-baseline gap-1 mb-4">
+            <span className="text-3xl font-bold bg-gradient-to-r from-[var(--armai-gradient-start)] to-[var(--armai-gradient-end)] bg-clip-text text-transparent">
+              ₭{LAK_FORMAT.format(plan?.priceLak ?? STANDARD_PRICE_LAK)}
+            </span>
+            <span className="text-[var(--armai-text-muted)]">{t('plan.perMonth')}</span>
+          </div>
+          <ul className="space-y-2 mb-6">
+            {(plan?.features ?? STANDARD_FEATURES).map((f, i) => (
+              <li
+                key={i}
+                className="text-sm text-[var(--armai-text-secondary)] flex items-center gap-2"
               >
-                <h2 className="text-lg font-semibold text-[var(--armai-text)] mb-1">{plan.name}</h2>
-                <div className="flex items-baseline gap-1 mb-4">
-                  <span className="text-3xl font-bold bg-gradient-to-r from-[var(--armai-gradient-start)] to-[var(--armai-gradient-end)] bg-clip-text text-transparent">
-                    ₭{KIP_FORMAT.format(plan.priceLak)}
-                  </span>
-                  <span className="text-[var(--armai-text-muted)]">{t('plan.perMonth')}</span>
-                </div>
-                <ul className="space-y-2 mb-6 flex-1">
-                  {plan.features.map((f, i) => (
-                    <li
-                      key={i}
-                      className="text-sm text-[var(--armai-text-secondary)] flex items-center gap-2"
-                    >
-                      <span className="text-accent">✓</span> {f}
-                    </li>
-                  ))}
-                </ul>
-                <button
-                  type="button"
-                  disabled={!!checkoutLoading || isCurrent}
-                  onClick={() => handleChoosePlan(plan.code)}
-                  className="w-full py-2.5 px-4 rounded-lg font-medium bg-[var(--armai-primary)] text-white hover:opacity-90 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--armai-primary)] focus-visible:ring-offset-2"
-                >
-                  {checkoutLoading === plan.code
-                    ? t('common.loading')
-                    : isCurrent
-                      ? t('pricing.currentPlan')
-                      : t('pricing.choosePlan')}
-                </button>
-                {isCurrent && sub?.nextBillingAt && (
-                  <p className="mt-2 text-xs text-[var(--armai-text-muted)]">
-                    {t('pricing.expiresAt')}: {new Date(sub.nextBillingAt).toLocaleDateString()}
-                  </p>
-                )}
-              </div>
-            )
-          })}
+                <span className="text-accent">✓</span> {f}
+              </li>
+            ))}
+          </ul>
+          {isActive ? (
+            <>
+              <p className="text-sm text-[var(--armai-text)] mb-2">
+                {t('pricing.currentPlan')}: {t('plan.standard')} ({t('pricing.expiresAt')}{' '}
+                {expiryDate})
+              </p>
+              <button
+                type="button"
+                disabled={!!submitLoading}
+                onClick={handleSubscribeOrRenew}
+                className="w-full py-2.5 px-4 rounded-lg font-medium bg-[var(--armai-primary)] text-white hover:opacity-90 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--armai-primary)] focus-visible:ring-offset-2"
+              >
+                {submitLoading ? t('common.loading') : t('pricing.renew')}
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              disabled={!!submitLoading}
+              onClick={handleSubscribeOrRenew}
+              className="w-full py-2.5 px-4 rounded-lg font-medium bg-[var(--armai-primary)] text-white hover:opacity-90 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--armai-primary)] focus-visible:ring-offset-2"
+            >
+              {submitLoading ? t('common.loading') : t('pricing.subscribeCta')}
+            </button>
+          )}
         </div>
+
+        {modalOpen && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+            role="dialog"
+            aria-modal="true"
+          >
+            <div className="w-full max-w-md rounded-xl border border-[var(--armai-border)] bg-[var(--armai-surface)] shadow-xl p-6">
+              <h2 className="text-lg font-semibold text-[var(--armai-text)] mb-2">
+                {t('pricing.bankDetails')}
+              </h2>
+              <p className="text-sm text-[var(--armai-text-secondary)] mb-2">
+                ກີບ 1,999,000 / ເດືອນ — ໂອນເຂົ້າບັນຊີທະນາຄານຕາມລາຍລະອຽດດ້ານລຸ່ມ. ຫຼັງໂອນແລ້ວ
+                ທີມງານຈະກວດສອບ ແລະ ເປີດໃຊ້ງານໃຫ້.
+              </p>
+              <div className="rounded-lg bg-[var(--armai-bg)] p-3 text-sm text-[var(--armai-text)] font-mono mb-4">
+                BCEL — ບັນຊີ ArmAI Subscription
+                <br />
+                ຫມາຍເຫດ: ຊື່ຮ້ານ / ເບີຕິດຕໍ່
+              </div>
+              {pendingMessage && (
+                <p className="text-sm text-amber-600 dark:text-amber-400 mb-4">{pendingMessage}</p>
+              )}
+              <button
+                type="button"
+                onClick={() => setModalOpen(false)}
+                className="w-full py-2 rounded-lg border border-[var(--armai-border)] text-[var(--armai-text)] hover:bg-[var(--armai-surface-elevated)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--armai-primary)]"
+              >
+                {t('common.cancel')}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

@@ -134,7 +134,7 @@ export default function GeneralSettingsPage() {
               to="/pricing"
               className="text-sm font-medium text-[var(--armai-primary)] hover:underline"
             >
-              {t('pricing.choosePlan')}
+              {sub?.nextBillingAt ? t('pricing.renew') : t('pricing.subscribeCta')}
             </Link>
           }
           style={{
@@ -145,8 +145,7 @@ export default function GeneralSettingsPage() {
           {sub ? (
             <div className="py-2 text-sm">
               <p className="text-[var(--armai-text)]">
-                {t('pricing.currentPlan')}:{' '}
-                {sub.planCode === 'pro' ? t('plan.pro') : t('plan.basic')}
+                {t('pricing.currentPlan')}: {t('plan.standard')}
               </p>
               {sub.nextBillingAt && (
                 <p className="text-[var(--armai-text-muted)] mt-1">

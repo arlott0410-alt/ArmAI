@@ -136,8 +136,7 @@ export default function MerchantSettings() {
       {sub && (
         <PanelCard title={t('account.subscription')} subtitle={t('account.billingInfo')}>
           <p style={{ marginBottom: 8, fontSize: 14, color: theme.textSecondary }}>
-            {t('pricing.currentPlan')}: {sub.planCode === 'pro' ? t('plan.pro') : t('plan.basic')} •{' '}
-            {t('pricing.expiresAt')}:{' '}
+            {t('pricing.currentPlan')}: {t('plan.standard')} • {t('pricing.expiresAt')}:{' '}
             {sub.nextBillingAt ? new Date(sub.nextBillingAt).toLocaleDateString() : '—'}
           </p>
           <Link to="/pricing" style={{ color: theme.primary, fontSize: 14 }}>

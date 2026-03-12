@@ -15,9 +15,9 @@ app.use('/*', resolveMerchant)
 app.use('/*', requireMerchantAdmin)
 
 const createCheckoutBodySchema = z.object({
-  plan_code: z.string().min(1).max(64),
-  success_url: z.string().url(),
-  cancel_url: z.string().url(),
+  plan_code: z.string().max(64).optional(),
+  success_url: z.string().url().optional(),
+  cancel_url: z.string().url().optional(),
   customer_email: z.string().email().optional().nullable(),
   customer_phone: z.string().max(32).optional().nullable(),
   billing_address: z
@@ -42,12 +42,12 @@ app.post('/', async (c) => {
     parsed.data
   const merchantId = c.get('merchantId')
   const supabase = getSupabaseAdmin(c.env)
-
+  const base = c.req.url.replace(/\/subscribe\/?.*$/, '')
   const result = await createCheckout(supabase, c.env, {
     merchantId,
-    planCode: plan_code,
-    successUrl: success_url,
-    cancelUrl: cancel_url,
+    planCode: plan_code ?? 'standard',
+    successUrl: success_url ?? `${base}/pricing`,
+    cancelUrl: cancel_url ?? `${base}/pricing`,
     customerEmail: customer_email ?? null,
     customerPhone: customer_phone ?? null,
     billingAddress: billing_address ?? null,

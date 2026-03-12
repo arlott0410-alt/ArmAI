@@ -1,9 +1,7 @@
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { useI18n } from '../i18n/I18nProvider'
 
 export default function CheckoutSuccess() {
-  const [params] = useSearchParams()
-  const plan = params.get('plan') ?? 'basic'
   const { t } = useI18n()
 
   return (
@@ -16,8 +14,8 @@ export default function CheckoutSuccess() {
           {t('nav.payment')} ສຳເລັດ
         </h1>
         <p className="text-[var(--armai-text-secondary)] mb-6">
-          ການສະໝັກສະມາຊິກແຜນ {plan === 'pro' ? t('plan.pro') : t('plan.basic')}{' '}
-          ຂອງທ່ານຖືກກະທຳສຳເລັດແລ້ວ. ທ່ານຈະໄດ້ຮັບອີເມວຫາບັນຊີ.
+          ການສະໝັກແຜນ {t('plan.standard')} ຂອງທ່ານຖືກບັນທຶກແລ້ວ. ຫຼັງກວດສອບການໂອນ
+          ພວກເຮົາຈະເປີດໃຊ້ງານໃຫ້.
         </p>
         <Link
           to="/merchant/dashboard"

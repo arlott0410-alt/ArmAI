@@ -1,15 +1,11 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import {
-  SUBSCRIPTION_PLAN_CATALOG,
-  getPlanByCode as getCatalogPlan,
-  type PlanCode,
-} from '@armai/shared'
+import { STANDARD_PLAN_CODE, STANDARD_PLAN, getPlanByCode as getCatalogPlan } from '@armai/shared'
 import * as billing from './billing.js'
 import * as merchantService from './merchant.js'
 import * as plansDb from './plans-db.js'
 
-/** Default LAK prices when subscription_plans table is empty. */
-const FALLBACK_PLANS_LAK: Record<string, number> = { basic: 1_072_000, pro: 6_432_000 }
+/** Single plan: Standard 1,999,000 LAK/month. */
+export const STANDARD_PRICE_LAK = 1_999_000
 
 export interface PlanPublic {
   id?: string
@@ -20,29 +16,31 @@ export interface PlanPublic {
   maxUsers: number | null
 }
 
-/** List plans from DB (LAK). Fallback to hardcoded if table empty. */
+/** List plans: single Standard plan from DB or fallback. */
 export async function getPlansPublic(supabase: SupabaseClient): Promise<PlanPublic[]> {
   const rows = await plansDb.listPlansPublic(supabase)
-  if (rows.length > 0) {
-    return rows.map((r) => ({
-      id: r.id,
-      code: r.code,
-      name: r.name,
-      priceLak: r.price_lak,
-      features: r.features,
-      maxUsers: r.max_users,
-    }))
+  const standard = rows.find((r) => r.code === STANDARD_PLAN_CODE) ?? null
+  if (standard) {
+    return [
+      {
+        id: standard.id,
+        code: standard.code,
+        name: standard.name,
+        priceLak: standard.price_lak,
+        features: standard.features,
+        maxUsers: standard.max_users,
+      },
+    ]
   }
-  return (['basic', 'pro'] as const).map((code) => {
-    const p = SUBSCRIPTION_PLAN_CATALOG[code]
-    return {
-      code: p.code,
-      name: p.nameKey,
-      priceLak: FALLBACK_PLANS_LAK[code] ?? 0,
-      features: p.features,
-      maxUsers: p.maxUsers,
-    }
-  })
+  return [
+    {
+      code: STANDARD_PLAN.code,
+      name: STANDARD_PLAN.nameKey,
+      priceLak: STANDARD_PRICE_LAK,
+      features: [...STANDARD_PLAN.features],
+      maxUsers: STANDARD_PLAN.maxUsers,
+    },
+  ]
 }
 
 export async function getMerchantSubscription(
@@ -100,8 +98,8 @@ export interface CreateCheckoutResult {
 }
 
 /**
- * Create a checkout session. Prefer BCEL OnePay for Laos; fallback to Stripe.
- * In production, integrate BCEL OnePay SDK/API here.
+ * Create a pending subscription payment (manual slip). Amount fixed 1,999,000 LAK.
+ * Superadmin approves via Billing page → subscription active, expiry +1 month.
  */
 export async function createCheckout(
   supabase: SupabaseClient,
@@ -113,105 +111,36 @@ export async function createCheckout(
   },
   params: CreateCheckoutParams
 ): Promise<CreateCheckoutResult> {
-  const dbPlan = await plansDb.getPlanByCode(supabase, params.planCode)
-  const catalogPlan = getCatalogPlan(params.planCode)
-  const priceLak = dbPlan?.price_lak ?? FALLBACK_PLANS_LAK[params.planCode] ?? 0
-  const planName = dbPlan?.name ?? catalogPlan?.nameKey ?? params.planCode
+  const planCode = params.planCode === STANDARD_PLAN_CODE ? params.planCode : STANDARD_PLAN_CODE
+  const priceLak = STANDARD_PRICE_LAK
+  const dbPlan = await plansDb.getPlanByCode(supabase, planCode)
+  const catalogPlan = getCatalogPlan(planCode)
+  const planName = dbPlan?.name ?? catalogPlan?.nameKey ?? 'Standard'
   const features = dbPlan?.features ?? catalogPlan?.features ?? []
-  if (!dbPlan && !catalogPlan && priceLak <= 0)
-    return { checkoutUrl: null, paymentId: null, error: 'Invalid plan' }
 
   const merchant = await merchantService
     .getMerchantById(supabase, params.merchantId)
     .catch(() => null)
   if (!merchant) return { checkoutUrl: null, paymentId: null, error: 'Merchant not found' }
 
-  // Prefer BCEL OnePay for Laos (LA)
-  const isLaos = (merchant.default_country ?? '').toUpperCase() === 'LA'
-  if (
-    isLaos &&
-    env.BCEL_ONEPAY_API_URL &&
-    env.BCEL_ONEPAY_MERCHANT_ID &&
-    env.BCEL_ONEPAY_SECRET_KEY
-  ) {
-    // Placeholder: BCEL OnePay integration would call their API to create payment/e-invoice
-    // and return redirect URL for QR or card entry. For now return a placeholder URL.
-    const { data: paymentRow, error } = await supabase
-      .from('subscription_payments')
-      .insert({
-        merchant_id: params.merchantId,
-        provider: 'bcel_onepay',
-        amount: priceLak,
-        currency: 'LAK',
-        status: 'pending',
-        customer_email: params.customerEmail ?? null,
-        customer_phone: params.customerPhone ?? null,
-        billing_address: params.billingAddress ?? null,
-        metadata: { plan_code: params.planCode, plan_name: planName },
-      })
-      .select('id')
-      .single()
-    if (error) return { checkoutUrl: null, paymentId: null, error: error.message }
-    // In production: call BCEL API, get payment URL, update external_id when available
-    const checkoutUrl = `${env.BCEL_ONEPAY_API_URL}/pay?ref=${paymentRow.id}`
-    return { checkoutUrl, paymentId: paymentRow.id }
-  }
-
-  // Stripe fallback (for global cards). Requires stripe package: npm install stripe
-  if (env.STRIPE_SECRET_KEY) {
-    try {
-      const stripeMod = await import('stripe').catch(() => null)
-      const Stripe = stripeMod?.default
-      if (!Stripe) {
-        return { checkoutUrl: null, paymentId: null, error: 'Stripe SDK not installed' }
-      }
-      const stripe = new Stripe(env.STRIPE_SECRET_KEY, { apiVersion: '2024-11-20.acacia' })
-      const session = await stripe.checkout.sessions.create({
-        mode: 'subscription',
-        payment_method_types: ['card'],
-        line_items: [
-          {
-            price_data: {
-              currency: 'usd',
-              unit_amount: Math.round((priceLak / 20000) * 100), // LAK to USD approx for Stripe
-              product_data: {
-                name: planName,
-                description: features.join(', '),
-              },
-              recurring: { interval: 'month' },
-            },
-            quantity: 1,
-          },
-        ],
-        success_url: params.successUrl,
-        cancel_url: params.cancelUrl,
-        customer_email: params.customerEmail ?? undefined,
-        client_reference_id: params.merchantId,
-        metadata: {
-          merchant_id: params.merchantId,
-          plan_code: params.planCode,
-        },
-      })
-      const paymentId = session.id
-      await supabase.from('subscription_payments').insert({
-        merchant_id: params.merchantId,
-        provider: 'stripe',
-        external_id: session.id,
-        amount: priceLak,
-        currency: 'LAK',
-        status: 'pending',
-      })
-      return {
-        checkoutUrl: session.url ?? null,
-        paymentId,
-      }
-    } catch (e) {
-      const message = e instanceof Error ? e.message : String(e)
-      return { checkoutUrl: null, paymentId: null, error: message }
-    }
-  }
-
-  return { checkoutUrl: null, paymentId: null, error: 'No payment provider configured' }
+  // Manual slip flow: create pending payment (1,999,000 LAK), no redirect. Super approves later.
+  const { data: paymentRow, error: insertError } = await supabase
+    .from('subscription_payments')
+    .insert({
+      merchant_id: params.merchantId,
+      provider: 'manual_slip',
+      amount: STANDARD_PRICE_LAK,
+      currency: 'LAK',
+      status: 'pending',
+      customer_email: params.customerEmail ?? null,
+      customer_phone: params.customerPhone ?? null,
+      billing_address: params.billingAddress ?? null,
+      metadata: { plan_code: planCode, plan_name: planName },
+    })
+    .select('id')
+    .single()
+  if (insertError) return { checkoutUrl: null, paymentId: null, error: insertError.message }
+  return { checkoutUrl: null, paymentId: paymentRow.id }
 }
 
 /**
@@ -224,8 +153,8 @@ export async function activateSubscription(
   planCode: string,
   paymentExternalId?: string
 ): Promise<void> {
-  const dbPlan = await plansDb.getPlanByCodeAny(supabase, planCode)
-  const priceLak = dbPlan?.price_lak ?? FALLBACK_PLANS_LAK[planCode] ?? 0
+  const code = planCode === STANDARD_PLAN_CODE ? planCode : STANDARD_PLAN_CODE
+  const priceLak = STANDARD_PRICE_LAK
 
   const now = new Date()
   const periodStart = now
@@ -234,7 +163,7 @@ export async function activateSubscription(
   const nextBilling = new Date(periodEnd)
 
   await billing.upsertMerchantPlan(supabase, merchantId, {
-    plan_code: planCode,
+    plan_code: code,
     billing_status: 'active',
     monthly_price_usd: priceLak / 20000,
     currency: 'LAK',
@@ -283,4 +212,58 @@ export async function markPaymentSucceeded(
       updated_at: new Date().toISOString(),
     })
     .eq('id', paymentId)
+}
+
+export interface PendingPaymentRow {
+  id: string
+  merchant_id: string
+  amount: number
+  currency: string
+  status: string
+  created_at: string
+  merchant_name?: string
+}
+
+/** List pending subscription payments (for superadmin Billing page). */
+export async function listPendingSubscriptionPayments(
+  supabase: SupabaseClient
+): Promise<PendingPaymentRow[]> {
+  const { data: payments, error } = await supabase
+    .from('subscription_payments')
+    .select('id, merchant_id, amount, currency, status, created_at')
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false })
+    .limit(100)
+  if (error) throw new Error(error.message)
+  const list = (payments ?? []) as PendingPaymentRow[]
+  if (list.length === 0) return []
+  const merchantIds = [...new Set(list.map((p) => p.merchant_id))]
+  const { data: merchants } = await supabase
+    .from('merchants')
+    .select('id, name')
+    .in('id', merchantIds)
+  const nameById = new Map(
+    (merchants ?? []).map((m: { id: string; name: string }) => [m.id, m.name])
+  )
+  return list.map((p) => ({ ...p, merchant_name: nameById.get(p.merchant_id) ?? undefined }))
+}
+
+/** Approve a pending payment: activate subscription (expiry +1 month) and mark payment succeeded. */
+export async function approveSubscriptionPayment(
+  supabase: SupabaseClient,
+  paymentId: string
+): Promise<{ ok: boolean; error?: string }> {
+  const { data: payment, error: fetchError } = await supabase
+    .from('subscription_payments')
+    .select('id, merchant_id, status')
+    .eq('id', paymentId)
+    .single()
+  if (fetchError || !payment) return { ok: false, error: 'Payment not found' }
+  if ((payment as { status: string }).status !== 'pending') {
+    return { ok: false, error: 'Payment is not pending' }
+  }
+  const merchantId = (payment as { merchant_id: string }).merchant_id
+  await activateSubscription(supabase, merchantId, STANDARD_PLAN_CODE)
+  await markPaymentSucceeded(supabase, paymentId)
+  return { ok: true }
 }

@@ -73,7 +73,7 @@ app.post('/bcel', async (c) => {
 
   if (!payment) return c.json({ error: 'Payment not found' }, 404)
 
-  const planCode = (payment.metadata as { plan_code?: string } | null)?.plan_code ?? 'basic'
+  const planCode = (payment.metadata as { plan_code?: string } | null)?.plan_code ?? 'standard'
   await activateSubscription(supabase, payment.merchant_id, planCode)
   await markPaymentSucceeded(supabase, payment.id, body.transaction_id ?? null)
 

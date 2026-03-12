@@ -267,6 +267,20 @@ export const superApi = {
       `/super/billing/events${merchantId ? `?merchantId=${merchantId}` : ''}`,
       { token }
     ),
+  pendingSubscriptionPayments: (token: string) =>
+    request<{
+      payments: {
+        id: string
+        merchant_id: string
+        merchant_name?: string
+        amount: number
+        currency: string
+        status: string
+        created_at: string
+      }[]
+    }>('/super/billing/pending-payments', { token }),
+  approveSubscriptionPayment: (token: string, paymentId: string) =>
+    request<{ ok: boolean }>(`/super/billing/approve/${paymentId}`, { method: 'POST', token }),
   auditLogs: (token: string, limit?: number) =>
     request<{ logs: unknown[] }>(`/super/audit${limit != null ? `?limit=${limit}` : ''}`, {
       token,

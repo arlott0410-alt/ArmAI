@@ -7,6 +7,7 @@ import plansRoutes from './plans.js'
 import * as supportService from '../../services/support.js'
 import * as superDashboard from '../../services/super-dashboard.js'
 import * as billingService from '../../services/billing.js'
+import * as subscriptionService from '../../services/subscription.js'
 import {
   createMerchantBodySchema,
   updateMerchantPlanBodySchema,
@@ -74,7 +75,7 @@ app.post('/merchants', async (c) => {
     )
     await supabase.from('merchant_plans').insert({
       merchant_id: merchantId,
-      plan_code: 'starter',
+      plan_code: 'standard',
       billing_status: 'trialing',
       monthly_price_usd: 0,
       currency: planCurrency,
@@ -229,6 +230,20 @@ app.get('/billing/events', async (c) => {
     .order('created_at', { ascending: false })
     .limit(100)
   return c.json({ events: data ?? [] })
+})
+
+app.get('/billing/pending-payments', async (c) => {
+  const supabase = getSupabaseAdmin(c.env)
+  const list = await subscriptionService.listPendingSubscriptionPayments(supabase)
+  return c.json({ payments: list })
+})
+
+app.post('/billing/approve/:paymentId', async (c) => {
+  const paymentId = c.req.param('paymentId')
+  const supabase = getSupabaseAdmin(c.env)
+  const result = await subscriptionService.approveSubscriptionPayment(supabase, paymentId)
+  if (!result.ok) return c.json({ error: result.error ?? 'Failed' }, 400)
+  return c.json({ ok: true })
 })
 
 app.get('/audit', async (c) => {

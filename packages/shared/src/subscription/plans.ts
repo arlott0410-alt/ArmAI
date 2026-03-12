@@ -1,40 +1,31 @@
 /**
- * Enterprise subscription plan definitions for Laos SaaS ($50–$300 USD/month).
+ * Single plan: Standard — 1,999,000 LAK/month, all features.
  */
 
-export const PLAN_CODES = ['basic', 'pro'] as const
-export type PlanCode = (typeof PLAN_CODES)[number]
+export const STANDARD_PLAN_CODE = 'standard' as const
+export type PlanCode = typeof STANDARD_PLAN_CODE
 
-export const SUBSCRIPTION_PLAN_CATALOG: Record<
-  PlanCode,
-  {
-    code: PlanCode
-    nameKey: string
-    monthlyPriceUsd: number
-    features: string[]
-    maxUsers: number | null
-    supportLevel: string
-  }
-> = {
-  basic: {
-    code: 'basic',
-    nameKey: 'plan.basic',
-    monthlyPriceUsd: 50,
-    features: ['Core AI features', 'Limited users (3)', 'Email support'],
-    maxUsers: 3,
-    supportLevel: 'email',
-  },
-  pro: {
-    code: 'pro',
-    nameKey: 'plan.pro',
-    monthlyPriceUsd: 300,
-    features: ['Advanced AI', 'Unlimited users', 'Analytics', 'Priority support'],
-    maxUsers: null,
-    supportLevel: 'priority',
-  },
+export const STANDARD_PLAN = {
+  code: STANDARD_PLAN_CODE,
+  nameKey: 'plan.standard',
+  monthlyPriceUsd: 1_999_000 / 20_000,
+  features: [
+    'Core AI features',
+    'Unlimited users',
+    'Analytics',
+    'Priority support',
+    'All channels (Facebook, WhatsApp, Telegram)',
+    'Bank sync & payment config',
+    'Knowledge base & promotions',
+  ],
+  maxUsers: null,
+  supportLevel: 'priority',
+} as const
+
+export const SUBSCRIPTION_PLAN_CATALOG: Record<PlanCode, typeof STANDARD_PLAN> = {
+  [STANDARD_PLAN_CODE]: STANDARD_PLAN,
 }
 
-export function getPlanByCode(code: string): (typeof SUBSCRIPTION_PLAN_CATALOG)[PlanCode] | null {
-  if (code === 'basic' || code === 'pro') return SUBSCRIPTION_PLAN_CATALOG[code]
-  return null
+export function getPlanByCode(code: string): typeof STANDARD_PLAN | null {
+  return code === STANDARD_PLAN_CODE ? STANDARD_PLAN : null
 }
