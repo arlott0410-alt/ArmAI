@@ -322,9 +322,9 @@ export default function Pricing() {
               type="button"
               disabled={!!submitLoading}
               onClick={() => openModal('annual')}
-              className="rounded-lg border-2 border-[var(--armai-primary)] bg-[var(--armai-primary)]/10 p-4 text-left hover:bg-[var(--armai-primary)]/20 relative"
+              className="relative rounded-lg border-2 border-[var(--armai-primary)] bg-[var(--armai-primary)]/10 p-4 pt-5 text-left hover:bg-[var(--armai-primary)]/20"
             >
-              <span className="absolute top-2 right-2 bg-amber-500 text-black text-xs font-medium px-2 py-1 rounded">
+              <span className="absolute top-0 right-0 -translate-y-1/2 bg-gradient-to-r from-orange-500 to-amber-500 text-white px-3 py-1 rounded-b-lg text-sm font-medium shadow">
                 {t('pricing.specialDiscountYearly')}
               </span>
               <div className="font-semibold text-[var(--armai-text)]">{t('pricing.payAnnual')}</div>

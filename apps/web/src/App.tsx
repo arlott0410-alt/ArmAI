@@ -1,6 +1,18 @@
 import { Suspense, lazy } from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from './contexts/AuthContext'
+
+/** If user lands on / with email-confirm params, send to /auth/confirm so ConfirmPage runs. */
+function RootRedirect() {
+  const loc = useLocation()
+  const hasTokenHash = new URLSearchParams(loc.search).has('token_hash')
+  const hasAccessToken = loc.hash.includes('access_token=')
+  if (hasTokenHash || hasAccessToken) {
+    const to = `/auth/confirm${loc.search}${loc.hash}`
+    return <Navigate to={to} replace />
+  }
+  return <Navigate to="/login" replace />
+}
 
 const Login = lazy(() => import('./pages/Login'))
 const SignupPage = lazy(() => import('./pages/SignupPage'))
@@ -138,7 +150,7 @@ export default function App() {
         {/* Legacy: admin merged into super */}
         <Route path="/admin" element={<Navigate to="/super/plans" replace />} />
         <Route path="/admin/*" element={<Navigate to="/super/plans" replace />} />
-        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/" element={<RootRedirect />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </Suspense>
