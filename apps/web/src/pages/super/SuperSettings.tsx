@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useAuth } from '../../contexts/AuthContext'
 import { useI18n } from '../../i18n/I18nProvider'
@@ -29,9 +28,9 @@ export default function SuperSettings() {
     handleSubmit,
     setValue,
     watch,
+    setError,
     formState: { errors, isSubmitting },
   } = useForm<BankFormValues>({
-    resolver: zodResolver(bankSchema),
     defaultValues: {
       bank_name: '',
       account_number: '',
@@ -73,14 +72,24 @@ export default function SuperSettings() {
   }
 
   const onSubmit = async (data: BankFormValues) => {
+    const parsed = bankSchema.safeParse(data)
+    if (!parsed.success) {
+      const fieldErrors = parsed.error.flatten().fieldErrors
+      if (fieldErrors.bank_name?.[0]) setError('bank_name', { message: fieldErrors.bank_name[0] })
+      if (fieldErrors.account_number?.[0])
+        setError('account_number', { message: fieldErrors.account_number[0] })
+      if (fieldErrors.account_holder?.[0])
+        setError('account_holder', { message: fieldErrors.account_holder[0] })
+      return
+    }
     if (!token) return
     try {
       await systemSettingsApi.patch(token, {
         bank: {
-          bank_name: data.bank_name,
-          account_number: data.account_number,
-          account_holder: data.account_holder,
-          qr_image_url: data.qr_image_url ?? null,
+          bank_name: parsed.data.bank_name,
+          account_number: parsed.data.account_number,
+          account_holder: parsed.data.account_holder,
+          qr_image_url: parsed.data.qr_image_url ?? null,
         },
       })
       toast.success(t('common.save') + ' — OK')

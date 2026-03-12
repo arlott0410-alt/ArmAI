@@ -19,7 +19,6 @@ const LAK_FORMAT = new Intl.NumberFormat('lo-LA', { maximumFractionDigits: 0 })
 const STANDARD_PLAN_CODE = 'standard'
 const STANDARD_PRICE_LAK = 1_999_000
 const STANDARD_ANNUAL_LAK = 19_999_000
-const STANDARD_ANNUAL_PER_MONTH_LAK = Math.round(STANDARD_ANNUAL_LAK / 12)
 
 type BankSettings = {
   bank_name: string
