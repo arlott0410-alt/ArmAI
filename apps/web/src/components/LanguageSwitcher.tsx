@@ -27,7 +27,7 @@ export function LanguageSwitcher({
     return (
       <div className="py-1 border-b border-[var(--armai-border-muted)]">
         <div className="px-3 py-1.5 text-xs font-medium text-[var(--armai-text-muted)]">
-          {t('nav.settings')} / Language
+          {t('super.settingsLanguage')}
         </div>
         {LOCALES.map((l) => (
           <button

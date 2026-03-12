@@ -198,7 +198,6 @@ export default function MerchantLayout() {
             />
           </div>
           <div className="flex items-center gap-2">
-            <LanguageSwitcher inDropdown={false} />
             <button
               type="button"
               onClick={toggleDark}
@@ -246,22 +245,6 @@ export default function MerchantLayout() {
                       {user?.email}
                     </div>
                     <LanguageSwitcher inDropdown onSelect={() => setMenuOpen(false)} />
-                    <NavLink
-                      to="/merchant/settings"
-                      className="block px-3 py-2 text-sm text-[var(--armai-text)] hover:bg-[var(--armai-surface)]"
-                      role="menuitem"
-                      onClick={() => setMenuOpen(false)}
-                    >
-                      {t('nav.settings')}
-                    </NavLink>
-                    <NavLink
-                      to="/pricing"
-                      className="block px-3 py-2 text-sm text-[var(--armai-text)] hover:bg-[var(--armai-surface)]"
-                      role="menuitem"
-                      onClick={() => setMenuOpen(false)}
-                    >
-                      {t('nav.plans')}
-                    </NavLink>
                     <button
                       type="button"
                       onClick={handleSignOut}

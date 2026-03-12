@@ -11,18 +11,22 @@ type I18nContextValue = {
 
 const I18nContext = createContext<I18nContextValue | null>(null)
 
+const STORAGE_KEY = 'armai.locale'
+const DEFAULT_LOCALE: Locale = 'lo'
+
 export function I18nProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocale] = useState<Locale>(() => {
-    const saved = localStorage.getItem('armai.locale')
+    if (typeof window === 'undefined') return DEFAULT_LOCALE
+    const saved = localStorage.getItem(STORAGE_KEY)
     if (saved === 'lo' || saved === 'th' || saved === 'en') return saved
-    return 'lo'
+    return DEFAULT_LOCALE
   })
 
   const value = useMemo<I18nContextValue>(() => {
     const dict = dictionaries[locale]
     const t = (key: I18nKey) => dict[key] ?? key
     const set = (l: Locale) => {
-      localStorage.setItem('armai.locale', l)
+      localStorage.setItem(STORAGE_KEY, l)
       setLocale(l)
     }
     return { locale, setLocale: set, t }

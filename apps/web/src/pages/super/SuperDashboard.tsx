@@ -13,6 +13,7 @@ import {
   Tooltip,
 } from 'recharts'
 import { useAuth } from '../../contexts/AuthContext'
+import { useI18n } from '../../i18n/I18nProvider'
 import { superApi, type SuperDashboardResponse } from '../../lib/api'
 import { formatLAK } from '../../lib/formatLAK'
 import {
@@ -32,6 +33,7 @@ const CHART_COLORS = ['var(--armai-primary)', 'var(--armai-accent)', 'var(--arma
 
 export default function SuperDashboard() {
   const { user } = useAuth()
+  const { t } = useI18n()
   const [data, setData] = useState<SuperDashboardResponse | null>(null)
   const [channelMetrics, setChannelMetrics] = useState<{
     whatsappMerchantCount: number
@@ -58,7 +60,7 @@ export default function SuperDashboard() {
 
   if (error) {
     return (
-      <PageShell title="Overview" description="AI SaaS Command Center">
+      <PageShell title={t('super.overview')} description={t('super.commandCenter')}>
         <div
           className="p-4 rounded-xl border border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-400"
           role="alert"
@@ -119,28 +121,28 @@ export default function SuperDashboard() {
   }))
 
   return (
-    <PageShell title="Overview" description="AI SaaS Command Center">
+    <PageShell title={t('super.overview')} description={t('super.commandCenter')}>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 py-4">
         <motion.div whileHover={{ scale: 1.02 }} transition={{ type: 'spring', stiffness: 300 }}>
-          <StatCard label="MRR (this month)" value={formatLAK(mrrValue)} accent />
+          <StatCard label={t('super.mrrThisMonth')} value={formatLAK(mrrValue)} accent />
         </motion.div>
         <motion.div whileHover={{ scale: 1.02 }} transition={{ type: 'spring', stiffness: 300 }}>
-          <StatCard label="Active merchants" value={data.activeMerchants} />
+          <StatCard label={t('super.activeMerchants')} value={data.activeMerchants} />
         </motion.div>
         <motion.div whileHover={{ scale: 1.02 }} transition={{ type: 'spring', stiffness: 300 }}>
-          <StatCard label="Trialing" value={kpis?.trialingMerchants ?? 0} />
+          <StatCard label={t('super.trialing')} value={kpis?.trialingMerchants ?? 0} />
         </motion.div>
         <motion.div whileHover={{ scale: 1.02 }} transition={{ type: 'spring', stiffness: 300 }}>
-          <StatCard label="Past due" value={kpis?.pastDueMerchants ?? 0} />
+          <StatCard label={t('super.pastDue')} value={kpis?.pastDueMerchants ?? 0} />
         </motion.div>
         <motion.div whileHover={{ scale: 1.02 }} transition={{ type: 'spring', stiffness: 300 }}>
-          <StatCard label="Due in 7 days" value={kpis?.dueInNext7Days ?? 0} />
+          <StatCard label={t('super.dueIn7Days')} value={kpis?.dueInNext7Days ?? 0} />
         </motion.div>
         <motion.div whileHover={{ scale: 1.02 }} transition={{ type: 'spring', stiffness: 300 }}>
-          <StatCard label="New this month" value={kpis?.newMerchantsThisMonth ?? 0} />
+          <StatCard label={t('super.newThisMonth')} value={kpis?.newMerchantsThisMonth ?? 0} />
         </motion.div>
         <motion.div whileHover={{ scale: 1.02 }} transition={{ type: 'spring', stiffness: 300 }}>
-          <StatCard label="Activation ready" value={kpis?.activationReadyCount ?? 0} />
+          <StatCard label={t('super.activationReady')} value={kpis?.activationReadyCount ?? 0} />
         </motion.div>
         {channelMetrics != null && (
           <>
@@ -148,14 +150,17 @@ export default function SuperDashboard() {
               whileHover={{ scale: 1.02 }}
               transition={{ type: 'spring', stiffness: 300 }}
             >
-              <StatCard label="WhatsApp merchants" value={channelMetrics.whatsappMerchantCount} />
+              <StatCard
+                label={t('super.whatsappMerchants')}
+                value={channelMetrics.whatsappMerchantCount}
+              />
             </motion.div>
             <motion.div
               whileHover={{ scale: 1.02 }}
               transition={{ type: 'spring', stiffness: 300 }}
             >
               <StatCard
-                label="WhatsApp connections"
+                label={t('super.whatsappConnections')}
                 value={channelMetrics.whatsappActiveConnections}
               />
             </motion.div>
@@ -164,7 +169,10 @@ export default function SuperDashboard() {
       </div>
 
       {channelMetrics != null && (
-        <Section title="Messaging by channel" description="Total messages in channel_messages">
+        <Section
+          title={t('super.messagingByChannel')}
+          description="Total messages in channel_messages"
+        >
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
             <motion.div
               whileHover={{ scale: 1.01, boxShadow: '0 8px 24px rgba(0,0,0,0.08)' }}
@@ -173,7 +181,7 @@ export default function SuperDashboard() {
               <Card>
                 <CardBody>
                   <div className="text-xs text-[var(--armai-text-muted)] uppercase tracking-wider mb-1">
-                    Facebook
+                    {t('tabs.facebook')}
                   </div>
                   <div className="text-xl font-semibold text-[var(--armai-text)]">
                     {channelMetrics.messagesByChannel.facebook}
@@ -188,7 +196,7 @@ export default function SuperDashboard() {
               <Card>
                 <CardBody>
                   <div className="text-xs text-[var(--armai-text-muted)] uppercase tracking-wider mb-1">
-                    WhatsApp
+                    {t('tabs.whatsapp')}
                   </div>
                   <div className="text-xl font-semibold text-[var(--armai-text)]">
                     {channelMetrics.messagesByChannel.whatsapp}
@@ -233,7 +241,7 @@ export default function SuperDashboard() {
       )}
 
       {(revenue != null || mrrValue > 0 || nextBilling > 0) && (
-        <Section title="Revenue" description="Current and expected billing (LAK)">
+        <Section title={t('super.revenue')} description={t('super.revenueDescription')}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4 items-end">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <motion.div
@@ -243,7 +251,7 @@ export default function SuperDashboard() {
                 <Card className="shadow-sm hover:shadow-md transition-shadow">
                   <CardBody>
                     <div className="text-xs text-[var(--armai-text-muted)] uppercase tracking-wider mb-1">
-                      Current month MRR
+                      {t('super.currentMonthMRR')}
                     </div>
                     <div className="text-xl font-semibold text-[var(--armai-primary)]">
                       {formatLAK(revenue?.currentMonthMRR ?? mrrValue)}
@@ -258,7 +266,7 @@ export default function SuperDashboard() {
                 <Card className="shadow-sm hover:shadow-md transition-shadow">
                   <CardBody>
                     <div className="text-xs text-[var(--armai-text-muted)] uppercase tracking-wider mb-1">
-                      Expected next billing
+                      {t('super.expectedNextBilling')}
                     </div>
                     <div className="text-xl font-semibold text-[var(--armai-text)]">
                       {formatLAK(revenue?.expectedNextBilling ?? nextBilling)}
@@ -271,7 +279,9 @@ export default function SuperDashboard() {
               whileHover={{ scale: 1.01 }}
               className="rounded-xl border border-[var(--armai-border)] bg-[var(--armai-surface)] p-4"
             >
-              <div className="text-xs text-[var(--armai-text-muted)] mb-2">Revenue (LAK)</div>
+              <div className="text-xs text-[var(--armai-text-muted)] mb-2">
+                {t('super.revenue')} (LAK)
+              </div>
               <ResponsiveContainer width="100%" height={120}>
                 <LineChart data={revenueChartData}>
                   <XAxis dataKey="name" stroke="var(--armai-text-muted)" fontSize={12} />
@@ -305,12 +315,12 @@ export default function SuperDashboard() {
       )}
 
       {revenue == null && mrrValue === 0 && nextBilling === 0 && (
-        <Section title="Revenue" description="Current and expected billing">
+        <Section title={t('super.revenue')} description={t('super.revenueDescription')}>
           <Card>
             <CardBody>
               <EmptyState
-                title="No revenue data yet"
-                description="Revenue will appear once billing is active."
+                title={t('super.noRevenue')}
+                description={t('super.noRevenueDescription')}
               />
             </CardBody>
           </Card>
@@ -321,7 +331,7 @@ export default function SuperDashboard() {
         (billingHealth.overdue?.length > 0 ||
           billingHealth.dueSoon?.length > 0 ||
           billingHealth.trialEndingSoon?.length > 0) && (
-          <Section title="Merchant billing health">
+          <Section title={t('super.merchantBillingHealth')}>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 py-4">
               {billingHealth.overdue?.length > 0 && (
                 <motion.div
@@ -329,7 +339,7 @@ export default function SuperDashboard() {
                   transition={{ type: 'spring', stiffness: 300 }}
                 >
                   <Card>
-                    <CardHeader title="Overdue" />
+                    <CardHeader title={t('super.overdue')} />
                     <CardBody>
                       <ul className="m-0 pl-5 space-y-1">
                         {billingHealth.overdue.slice(0, 5).map((m) => (
@@ -353,7 +363,7 @@ export default function SuperDashboard() {
                   transition={{ type: 'spring', stiffness: 300 }}
                 >
                   <Card>
-                    <CardHeader title="Due soon" />
+                    <CardHeader title={t('super.dueSoon')} />
                     <CardBody>
                       <ul className="m-0 pl-5 space-y-1">
                         {billingHealth.dueSoon.slice(0, 5).map((m) => (
@@ -377,7 +387,7 @@ export default function SuperDashboard() {
                   transition={{ type: 'spring', stiffness: 300 }}
                 >
                   <Card>
-                    <CardHeader title="Trial ending soon" />
+                    <CardHeader title={t('super.trialEndingSoon')} />
                     <CardBody>
                       <ul className="m-0 pl-5 space-y-1">
                         {billingHealth.trialEndingSoon.slice(0, 5).map((m) => (
@@ -400,17 +410,17 @@ export default function SuperDashboard() {
         )}
 
       {setupHealth.filter((s) => s.incompleteSetup).length > 0 && (
-        <Section title="Setup incomplete">
+        <Section title={t('super.setupIncomplete')}>
           <Card>
             <CardBody style={{ padding: 0 }}>
               <table className="w-full border-collapse text-sm">
                 <thead>
                   <tr className="text-left border-b border-[var(--armai-border-muted)]">
                     <th className="px-4 py-3 text-[var(--armai-text-muted)] font-semibold text-xs uppercase">
-                      Merchant
+                      {t('super.merchant')}
                     </th>
                     <th className="px-4 py-3 text-[var(--armai-text-muted)] font-semibold text-xs uppercase">
-                      Missing
+                      {t('super.missing')}
                     </th>
                   </tr>
                 </thead>
@@ -433,9 +443,9 @@ export default function SuperDashboard() {
                         </td>
                         <td className="px-4 py-3 text-[var(--armai-text-secondary)]">
                           {[
-                            s.missingProducts && 'Products',
-                            s.noPaymentAccount && 'Payment account',
-                            s.noAiPrompt && 'AI prompt',
+                            s.missingProducts && t('super.products'),
+                            s.noPaymentAccount && t('super.paymentAccount'),
+                            s.noAiPrompt && t('super.aiPrompt'),
                           ]
                             .filter(Boolean)
                             .join(', ')}
@@ -449,10 +459,10 @@ export default function SuperDashboard() {
         </Section>
       )}
 
-      <Section title="Recent activity">
+      <Section title={t('super.recentActivity')}>
         <Card>
           <CardBody style={{ padding: 0 }}>
-            <ActivityFeed items={activityItems} emptyMessage="No recent activity." />
+            <ActivityFeed items={activityItems} emptyMessage={t('super.noRecentActivity')} />
           </CardBody>
         </Card>
       </Section>
