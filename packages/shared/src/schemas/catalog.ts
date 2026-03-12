@@ -20,6 +20,8 @@ export const productSchema = z.object({
   status: z.enum([PRODUCT_STATUS.ACTIVE, PRODUCT_STATUS.INACTIVE, PRODUCT_STATUS.ARCHIVED]).optional(),
   requires_manual_confirmation: z.boolean().optional(),
   ai_visible: z.boolean().optional(),
+  is_cod_allowed: z.boolean().optional(),
+  requires_manual_cod_confirmation: z.boolean().optional(),
 });
 
 export const productVariantSchema = z.object({

@@ -2,11 +2,16 @@
  * Shared domain types. Align with DB schema and API contracts.
  */
 
-import type { ORDER_STATUS, MATCHING_RESULT_STATUS, ROLE } from './constants.js';
+import type { ORDER_STATUS, MATCHING_RESULT_STATUS, ROLE, PAYMENT_METHOD, PAYMENT_STATUS, ORDER_COD_STATUS, PAYMENT_SWITCH_RESULT, PAYMENT_SWITCH_REQUESTED_BY } from './constants.js';
 
 export type OrderStatus = (typeof ORDER_STATUS)[keyof typeof ORDER_STATUS];
 export type MatchingResultStatus = (typeof MATCHING_RESULT_STATUS)[keyof typeof MATCHING_RESULT_STATUS];
 export type Role = (typeof ROLE)[keyof typeof ROLE];
+export type PaymentMethod = (typeof PAYMENT_METHOD)[keyof typeof PAYMENT_METHOD];
+export type PaymentStatus = (typeof PAYMENT_STATUS)[keyof typeof PAYMENT_STATUS];
+export type OrderCodStatus = (typeof ORDER_COD_STATUS)[keyof typeof ORDER_COD_STATUS];
+export type PaymentSwitchResult = (typeof PAYMENT_SWITCH_RESULT)[keyof typeof PAYMENT_SWITCH_RESULT];
+export type PaymentSwitchRequestedBy = (typeof PAYMENT_SWITCH_REQUESTED_BY)[keyof typeof PAYMENT_SWITCH_REQUESTED_BY];
 
 export interface Profile {
   id: string;

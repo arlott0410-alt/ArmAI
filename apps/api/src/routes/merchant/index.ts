@@ -3,7 +3,6 @@ import type { Env } from '../../env.js';
 import { authMiddleware, resolveMerchant, requireMerchantAdmin } from '../../middleware/auth.js';
 import { getSupabaseAdmin } from '../../lib/supabase.js';
 import * as merchantService from '../../services/merchant.js';
-import * as orderService from '../../services/orders.js';
 import * as aiContext from '../../services/ai-context.js';
 import * as merchantDashboard from '../../services/merchant-dashboard.js';
 import productsRoutes from './products.js';
@@ -12,6 +11,8 @@ import knowledgeRoutes from './knowledge.js';
 import promotionsRoutes from './promotions.js';
 import paymentAccountsRoutes from './payment-accounts.js';
 import bankSyncRoutes from './bank-sync.js';
+import paymentMethodSettingsRoutes from './payment-method-settings.js';
+import ordersRoutes from './orders.js';
 
 const app = new Hono<{
   Bindings: Env;
@@ -40,22 +41,8 @@ app.get('/readiness', async (c) => {
   return c.json({ readiness });
 });
 
-app.get('/orders', async (c) => {
-  const supabase = getSupabaseAdmin(c.env);
-  const merchantId = c.get('merchantId');
-  const status = c.req.query('status');
-  const limit = c.req.query('limit') ? parseInt(c.req.query('limit'), 10) : 50;
-  const list = await orderService.listOrders(supabase, merchantId, { status, limit });
-  return c.json({ orders: list });
-});
-
-app.get('/orders/:orderId', async (c) => {
-  const supabase = getSupabaseAdmin(c.env);
-  const merchantId = c.get('merchantId');
-  const orderId = c.req.param('orderId');
-  const order = await orderService.getOrder(supabase, merchantId, orderId);
-  return c.json(order);
-});
+app.route('/orders', ordersRoutes);
+app.route('/payment-method-settings', paymentMethodSettingsRoutes);
 
 app.route('/bank-sync', bankSyncRoutes);
 

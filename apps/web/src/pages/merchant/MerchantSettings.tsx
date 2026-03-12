@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { settingsApi } from '../../lib/api';
+import { settingsApi, paymentMethodSettingsApi, type MerchantCodSettings } from '../../lib/api';
 import { PageShell, PanelCard } from '../../components/ui';
 import { theme } from '../../theme';
 
@@ -43,14 +43,19 @@ export default function MerchantSettings() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
+  const [cod, setCod] = useState<MerchantCodSettings | null>(null);
+  const [codSaving, setCodSaving] = useState(false);
+  const [codSaveError, setCodSaveError] = useState<string | null>(null);
+  const [codSaved, setCodSaved] = useState(false);
+
   useEffect(() => {
     if (!token) return;
-    settingsApi
-      .get(token)
-      .then((s) => {
+    Promise.all([settingsApi.get(token), paymentMethodSettingsApi.get(token)])
+      .then(([s, codSettings]) => {
         setAiPrompt(s.ai_system_prompt ?? '');
         setBankParserId(s.bank_parser_id ?? '');
         setWebhookToken(s.webhook_verify_token ?? '');
+        setCod(codSettings);
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
@@ -132,6 +137,127 @@ export default function MerchantSettings() {
             When Facebook sends a GET request to verify your webhook URL, this token is checked. Keep it secret.
           </div>
         </PanelCard>
+
+        {cod != null && (
+          <PanelCard
+            title="Payment methods — COD"
+            subtitle="Cash on Delivery. When enabled, customers can choose to pay on delivery. Product-level eligibility is set per product."
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <input
+                  type="checkbox"
+                  checked={cod.enable_cod}
+                  onChange={(e) => setCod((c) => (c ? { ...c, enable_cod: e.target.checked } : c))}
+                />
+                <span style={{ fontSize: 13 }}>Enable COD</span>
+              </label>
+              <div>
+                <label style={labelStyle}>Min order amount (optional)</label>
+                <input
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  value={cod.cod_min_order_amount ?? ''}
+                  onChange={(e) => setCod((c) => (c ? { ...c, cod_min_order_amount: e.target.value === '' ? null : Number(e.target.value) } : c))}
+                  style={inputStyle}
+                  placeholder="No minimum"
+                />
+              </div>
+              <div>
+                <label style={labelStyle}>Max order amount (optional)</label>
+                <input
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  value={cod.cod_max_order_amount ?? ''}
+                  onChange={(e) => setCod((c) => (c ? { ...c, cod_max_order_amount: e.target.value === '' ? null : Number(e.target.value) } : c))}
+                  style={inputStyle}
+                  placeholder="No maximum"
+                />
+              </div>
+              <div>
+                <label style={labelStyle}>COD fee amount</label>
+                <input
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  value={cod.cod_fee_amount}
+                  onChange={(e) => setCod((c) => (c ? { ...c, cod_fee_amount: Number(e.target.value) || 0 } : c))}
+                  style={inputStyle}
+                />
+              </div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <input
+                  type="checkbox"
+                  checked={cod.require_phone_for_cod}
+                  onChange={(e) => setCod((c) => (c ? { ...c, require_phone_for_cod: e.target.checked } : c))}
+                />
+                <span style={{ fontSize: 13 }}>Require phone for COD</span>
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <input
+                  type="checkbox"
+                  checked={cod.require_full_address_for_cod}
+                  onChange={(e) => setCod((c) => (c ? { ...c, require_full_address_for_cod: e.target.checked } : c))}
+                />
+                <span style={{ fontSize: 13 }}>Require full address for COD</span>
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <input
+                  type="checkbox"
+                  checked={cod.cod_requires_manual_confirmation}
+                  onChange={(e) => setCod((c) => (c ? { ...c, cod_requires_manual_confirmation: e.target.checked } : c))}
+                />
+                <span style={{ fontSize: 13 }}>COD requires manual confirmation</span>
+              </label>
+              <div>
+                <label style={labelStyle}>Notes for AI (optional)</label>
+                <textarea
+                  value={cod.cod_notes_for_ai ?? ''}
+                  onChange={(e) => setCod((c) => (c ? { ...c, cod_notes_for_ai: e.target.value || null } : c))}
+                  rows={2}
+                  style={{ ...inputStyle, minHeight: 60 }}
+                  placeholder="e.g. COD available in Bangkok only."
+                />
+              </div>
+              {codSaveError && <p style={{ color: theme.danger, fontSize: 13 }}>{codSaveError}</p>}
+              {codSaved && <p style={{ color: theme.success, fontSize: 13 }}>COD settings saved.</p>}
+              <button
+                type="button"
+                disabled={codSaving}
+                onClick={async () => {
+                  if (!token || !cod) return;
+                  setCodSaveError(null);
+                  setCodSaved(false);
+                  setCodSaving(true);
+                  try {
+                    const updated = await paymentMethodSettingsApi.update(token, cod);
+                    setCod(updated);
+                    setCodSaved(true);
+                  } catch (err) {
+                    setCodSaveError(err instanceof Error ? err.message : 'Failed to save');
+                  } finally {
+                    setCodSaving(false);
+                  }
+                }}
+                style={{
+                  padding: '8px 16px',
+                  background: theme.primary,
+                  color: theme.background,
+                  border: 0,
+                  borderRadius: 6,
+                  fontWeight: 600,
+                  fontSize: 13,
+                  cursor: codSaving ? 'not-allowed' : 'pointer',
+                  alignSelf: 'flex-start',
+                }}
+              >
+                {codSaving ? 'Saving…' : 'Save COD settings'}
+              </button>
+            </div>
+          </PanelCard>
+        )}
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
           {saveError && (

@@ -68,16 +68,24 @@ export async function createDraftOrder(
   return { order, paymentAccount: account };
 }
 
-/** Get payment target for an order (for AI to send correct account to customer). */
+/** Get active payment target for an order (for AI to send correct account to customer). Only returns if order is prepaid and target is active. */
 export async function getOrderPaymentTarget(supabase: SupabaseClient, merchantId: string, orderId: string) {
+  const { data: order } = await supabase
+    .from('orders')
+    .select('payment_method')
+    .eq('id', orderId)
+    .eq('merchant_id', merchantId)
+    .single();
+  if (!order || order.payment_method === 'cod') return null;
   const { data, error } = await supabase
     .from('order_payment_targets')
     .select('*, merchant_payment_accounts(*)')
     .eq('order_id', orderId)
     .eq('merchant_id', merchantId)
+    .eq('is_active', true)
     .order('created_at', { ascending: false })
     .limit(1)
-    .single();
+    .maybeSingle();
   if (error || !data) return null;
   return data;
 }

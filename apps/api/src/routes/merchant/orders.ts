@@ -1,0 +1,246 @@
+import { Hono } from 'hono';
+import type { Env } from '../../env.js';
+import { getSupabaseAdmin } from '../../lib/supabase.js';
+import * as orderService from '../../services/orders.js';
+import * as orderDetail from '../../services/order-detail.js';
+import * as codSettings from '../../services/cod-settings.js';
+import * as paymentMethodSwitch from '../../services/payment-method-switch.js';
+import * as paymentAccounts from '../../services/payment-accounts.js';
+import { PAYMENT_METHOD, PAYMENT_SWITCH_RESULT, ORDER_COD_STATUS, PAYMENT_STATUS, ORDER_STATUS } from '@armai/shared';
+
+const app = new Hono<{
+  Bindings: Env;
+  Variables: { auth: import('../../middleware/auth.js').AuthContext; merchantId: string };
+}>();
+
+app.get('/', async (c) => {
+  const supabase = getSupabaseAdmin(c.env);
+  const merchantId = c.get('merchantId');
+  const status = c.req.query('status');
+  const payment_method = c.req.query('payment_method');
+  const limit = c.req.query('limit') ? parseInt(c.req.query('limit'), 10) : 50;
+  let list = await orderService.listOrders(supabase, merchantId, { status, limit });
+  if (payment_method) {
+    list = list.filter((o: { payment_method?: string }) => o.payment_method === payment_method);
+  }
+  return c.json({ orders: list });
+});
+
+app.get('/:orderId', async (c) => {
+  const supabase = getSupabaseAdmin(c.env);
+  const merchantId = c.get('merchantId');
+  const orderId = c.req.param('orderId');
+  const detail = await orderDetail.getOrderDetail(supabase, merchantId, orderId);
+  return c.json(detail);
+});
+
+app.post('/:orderId/payment-method/switch', async (c) => {
+  const supabase = getSupabaseAdmin(c.env);
+  const merchantId = c.get('merchantId');
+  const orderId = c.req.param('orderId');
+  const body = (await c.req.json().catch(() => ({}))) as { desired_method?: string; requested_by?: string };
+  const desiredMethod = (body.desired_method ?? 'prepaid_bank_transfer') as 'prepaid_bank_transfer' | 'prepaid_qr' | 'cod';
+  const requestedBy = (body.requested_by ?? 'merchant_admin') as 'customer' | 'ai' | 'merchant_admin' | 'system';
+
+  const order = await orderService.getOrder(supabase, merchantId, orderId);
+  const cod = await codSettings.getMerchantCodSettings(supabase, merchantId);
+  const { allCodAllowed, anyRequiresManualCod } = await paymentMethodSwitch.getOrderProductsCodEligibility(supabase, merchantId, orderId);
+  const can = await paymentMethodSwitch.canSwitchPaymentMethod(supabase, {
+    order: order as paymentMethodSwitch.OrderForSwitch,
+    desiredMethod,
+    codSettings: cod,
+    orderAmount: Number(order.amount ?? 0),
+    allProductsCodAllowed: allCodAllowed,
+    anyProductRequiresManualCod: anyRequiresManualCod,
+  });
+
+  if (can.result === PAYMENT_SWITCH_RESULT.DENIED) {
+    await orderDetail.recordPaymentMethodSwitch(supabase, {
+      merchantId,
+      orderId,
+      fromMethod: order.payment_method,
+      toMethod: desiredMethod,
+      result: 'denied',
+      reason: can.reason,
+      requestedBy,
+      requestedById: c.get('auth')?.userId,
+    });
+    return c.json({ ok: false, result: 'denied', reason: can.reason }, 400);
+  }
+
+  if (can.result === PAYMENT_SWITCH_RESULT.REQUIRES_MANUAL_CONFIRMATION && body.requested_by !== 'merchant_admin') {
+    await orderDetail.recordPaymentMethodSwitch(supabase, {
+      merchantId,
+      orderId,
+      fromMethod: order.payment_method,
+      toMethod: desiredMethod,
+      result: 'requires_manual_confirmation',
+      reason: can.reason,
+      requestedBy,
+      requestedById: c.get('auth')?.userId,
+    });
+    return c.json({ ok: false, result: 'requires_manual_confirmation', reason: can.reason }, 202);
+  }
+
+  await orderDetail.recordPaymentMethodSwitch(supabase, {
+    merchantId,
+    orderId,
+    fromMethod: order.payment_method,
+    toMethod: desiredMethod,
+    result: 'allowed',
+    reason: null,
+    requestedBy,
+    requestedById: c.get('auth')?.userId,
+  });
+
+  if (desiredMethod === PAYMENT_METHOD.COD && cod) {
+    await orderDetail.switchOrderToCod(supabase, merchantId, orderId, cod, Number(order.amount ?? 0));
+  } else if (desiredMethod === PAYMENT_METHOD.PREPAID_BANK_TRANSFER || desiredMethod === PAYMENT_METHOD.PREPAID_QR) {
+    const account = await paymentAccounts.selectAccountForOrder(supabase, merchantId, { totalAmount: Number(order.amount ?? 0) });
+    if (!account) return c.json({ error: 'No payment account available' }, 400);
+    await orderDetail.switchOrderToPrepaid(supabase, merchantId, orderId, account.id, Number(order.amount ?? 0), desiredMethod);
+  }
+
+  const updated = await orderDetail.getOrderDetail(supabase, merchantId, orderId);
+  return c.json({ ok: true, order: updated });
+});
+
+app.patch('/:orderId/shipping-details', async (c) => {
+  const supabase = getSupabaseAdmin(c.env);
+  const merchantId = c.get('merchantId');
+  const orderId = c.req.param('orderId');
+  await orderService.getOrder(supabase, merchantId, orderId);
+  const body = (await c.req.json().catch(() => ({}))) as Record<string, unknown>;
+  const payload = {
+    merchant_id: merchantId,
+    order_id: orderId,
+    recipient_name: body.recipient_name as string | undefined,
+    phone_number: body.phone_number as string | undefined,
+    province_or_prefecture: body.province_or_prefecture as string | undefined,
+    district: body.district as string | undefined,
+    village_or_area: body.village_or_area as string | undefined,
+    street_address: body.street_address as string | undefined,
+    landmark: body.landmark as string | undefined,
+    address_text: body.address_text as string | undefined,
+    delivery_notes: body.delivery_notes as string | undefined,
+    shipping_method: body.shipping_method as string | undefined,
+    shipping_fee: body.shipping_fee as number | undefined,
+    updated_at: new Date().toISOString(),
+  };
+  const { error } = await supabase.from('order_shipping_details').upsert(payload, { onConflict: 'order_id' });
+  if (error) return c.json({ error: error.message }, 400);
+  const { data } = await supabase.from('order_shipping_details').select('*').eq('order_id', orderId).single();
+  return c.json(data);
+});
+
+app.post('/:orderId/cod/confirm', async (c) => {
+  const supabase = getSupabaseAdmin(c.env);
+  const merchantId = c.get('merchantId');
+  const orderId = c.req.param('orderId');
+  const now = new Date().toISOString();
+  const { data: cod } = await supabase
+    .from('order_cod_details')
+    .select('id')
+    .eq('order_id', orderId)
+    .eq('merchant_id', merchantId)
+    .eq('is_active', true)
+    .maybeSingle();
+  if (!cod) return c.json({ error: 'No active COD details' }, 400);
+  await supabase
+    .from('order_cod_details')
+    .update({ cod_status: ORDER_COD_STATUS.READY_TO_SHIP, cod_confirmed_at: now, ready_to_ship_at: now, updated_at: now })
+    .eq('id', cod.id);
+  await supabase
+    .from('orders')
+    .update({ payment_status: PAYMENT_STATUS.COD_READY_TO_SHIP, updated_at: now })
+    .eq('id', orderId)
+    .eq('merchant_id', merchantId);
+  const detail = await orderDetail.getOrderDetail(supabase, merchantId, orderId);
+  return c.json({ ok: true, order: detail });
+});
+
+app.post('/:orderId/cod/mark-shipped', async (c) => {
+  const supabase = getSupabaseAdmin(c.env);
+  const merchantId = c.get('merchantId');
+  const orderId = c.req.param('orderId');
+  const now = new Date().toISOString();
+  const { data: cod } = await supabase
+    .from('order_cod_details')
+    .select('id')
+    .eq('order_id', orderId)
+    .eq('merchant_id', merchantId)
+    .eq('is_active', true)
+    .maybeSingle();
+  if (!cod) return c.json({ error: 'No active COD details' }, 400);
+  await supabase
+    .from('order_cod_details')
+    .update({ cod_status: ORDER_COD_STATUS.SHIPPED, shipped_at: now, updated_at: now })
+    .eq('id', cod.id);
+  await supabase
+    .from('orders')
+    .update({ payment_status: PAYMENT_STATUS.COD_SHIPPED, updated_at: now })
+    .eq('id', orderId)
+    .eq('merchant_id', merchantId);
+  const detail = await orderDetail.getOrderDetail(supabase, merchantId, orderId);
+  return c.json({ ok: true, order: detail });
+});
+
+app.post('/:orderId/cod/mark-collected', async (c) => {
+  const supabase = getSupabaseAdmin(c.env);
+  const merchantId = c.get('merchantId');
+  const orderId = c.req.param('orderId');
+  const body = (await c.req.json().catch(() => ({}))) as { collection_note?: string };
+  const now = new Date().toISOString();
+  const { data: cod } = await supabase
+    .from('order_cod_details')
+    .select('id')
+    .eq('order_id', orderId)
+    .eq('merchant_id', merchantId)
+    .eq('is_active', true)
+    .maybeSingle();
+  if (!cod) return c.json({ error: 'No active COD details' }, 400);
+  await supabase
+    .from('order_cod_details')
+    .update({
+      cod_status: ORDER_COD_STATUS.COLLECTED,
+      collected_at: now,
+      collection_note: (body.collection_note as string) ?? null,
+      updated_at: now,
+    })
+    .eq('id', cod.id);
+  await supabase
+    .from('orders')
+    .update({ status: ORDER_STATUS.PAID, payment_status: PAYMENT_STATUS.COD_COLLECTED, updated_at: now })
+    .eq('id', orderId)
+    .eq('merchant_id', merchantId);
+  const detail = await orderDetail.getOrderDetail(supabase, merchantId, orderId);
+  return c.json({ ok: true, order: detail });
+});
+
+app.post('/:orderId/cod/mark-failed', async (c) => {
+  const supabase = getSupabaseAdmin(c.env);
+  const merchantId = c.get('merchantId');
+  const orderId = c.req.param('orderId');
+  const now = new Date().toISOString();
+  const { data: cod } = await supabase
+    .from('order_cod_details')
+    .select('id')
+    .eq('order_id', orderId)
+    .eq('merchant_id', merchantId)
+    .eq('is_active', true)
+    .maybeSingle();
+  if (!cod) return c.json({ error: 'No active COD details' }, 400);
+  await supabase
+    .from('order_cod_details')
+    .update({ cod_status: ORDER_COD_STATUS.DELIVERY_FAILED, updated_at: now })
+    .eq('id', cod.id);
+  await supabase
+    .from('orders')
+    .update({ payment_status: PAYMENT_STATUS.COD_FAILED, updated_at: now })
+    .eq('id', orderId)
+    .eq('merchant_id', merchantId);
+  const detail = await orderDetail.getOrderDetail(supabase, merchantId, orderId);
+  return c.json({ ok: true, order: detail });
+});
+
+export default app;

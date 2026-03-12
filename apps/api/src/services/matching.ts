@@ -51,13 +51,22 @@ export async function runMatchingForBankTransaction(
   };
 
   for (const slip of candidates) {
+    const { data: orderRow } = await supabase
+      .from('orders')
+      .select('payment_method')
+      .eq('id', slip.order_id)
+      .eq('merchant_id', payload.merchantId)
+      .single();
+    if (!orderRow || orderRow.payment_method === 'cod') continue;
     const { data: target } = await supabase
       .from('order_payment_targets')
       .select('payment_account_id')
       .eq('order_id', slip.order_id)
       .eq('merchant_id', payload.merchantId)
+      .eq('is_active', true)
       .limit(1)
-      .single();
+      .maybeSingle();
+    if (!target) continue;
     let expectedAccount: string | null = null;
     let paymentAccountId: string | null = null;
     if (target?.payment_account_id) {

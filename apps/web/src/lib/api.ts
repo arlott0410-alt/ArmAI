@@ -152,6 +152,10 @@ export interface OrderRow {
   id: string;
   merchant_id: string;
   status: string;
+  payment_method?: string;
+  payment_status?: string;
+  payment_switch_count?: number;
+  payment_method_locked_at?: string | null;
   customer_name: string | null;
   amount: number | null;
   reference_code: string | null;
@@ -159,16 +163,48 @@ export interface OrderRow {
   updated_at: string;
 }
 
+export interface OrderDetailResponse extends OrderRow {
+  order_items: { id: string; product_name_snapshot: string; quantity: number; unit_price: number; total_price: number }[];
+  shipping_details: Record<string, unknown> | null;
+  cod_details: Record<string, unknown> | null;
+  payment_target: Record<string, unknown> | null;
+  payment_method_events: { id: string; from_method: string; to_method: string; switch_result: string; reason: string | null; requested_by_type: string; created_at: string }[];
+}
+
+export interface MerchantCodSettings {
+  merchant_id: string;
+  enable_cod: boolean;
+  cod_min_order_amount: number | null;
+  cod_max_order_amount: number | null;
+  cod_fee_amount: number;
+  require_phone_for_cod: boolean;
+  require_full_address_for_cod: boolean;
+  cod_requires_manual_confirmation: boolean;
+  cod_notes_for_ai: string | null;
+}
+
 export const merchantApi = {
   dashboard: (token: string) => request<MerchantDashboardResponse>('/merchant/dashboard', { token }),
-  orders: (token: string, params?: { status?: string; limit?: number }) => {
+  orders: (token: string, params?: { status?: string; payment_method?: string; limit?: number }) => {
     const q = new URLSearchParams();
     if (params?.status) q.set('status', params.status);
+    if (params?.payment_method) q.set('payment_method', params.payment_method);
     if (params?.limit) q.set('limit', String(params.limit));
     const query = q.toString();
     return request<{ orders: OrderRow[] }>(`/merchant/orders${query ? `?${query}` : ''}`, { token });
   },
   order: (token: string, orderId: string) => request<OrderRow>(`/merchant/orders/${orderId}`, { token }),
+  orderDetail: (token: string, orderId: string) => request<OrderDetailResponse>(`/merchant/orders/${orderId}`, { token }),
+  orderSwitchPaymentMethod: (token: string, orderId: string, body: { desired_method: string; requested_by?: string }) =>
+    request<{ ok: boolean; order?: OrderDetailResponse }>(`/merchant/orders/${orderId}/payment-method/switch`, { method: 'POST', token, body }),
+  orderCodConfirm: (token: string, orderId: string) =>
+    request<{ ok: boolean; order: OrderDetailResponse }>(`/merchant/orders/${orderId}/cod/confirm`, { method: 'POST', token }),
+  orderCodMarkShipped: (token: string, orderId: string) =>
+    request<{ ok: boolean; order: OrderDetailResponse }>(`/merchant/orders/${orderId}/cod/mark-shipped`, { method: 'POST', token }),
+  orderCodMarkCollected: (token: string, orderId: string, body?: { collection_note?: string }) =>
+    request<{ ok: boolean; order: OrderDetailResponse }>(`/merchant/orders/${orderId}/cod/mark-collected`, { method: 'POST', token, body: body ?? {} }),
+  orderCodMarkFailed: (token: string, orderId: string) =>
+    request<{ ok: boolean; order: OrderDetailResponse }>(`/merchant/orders/${orderId}/cod/mark-failed`, { method: 'POST', token }),
   readiness: (token: string) => request<{ readiness: ReadinessItem[] }>('/merchant/readiness', { token }),
   bankSync: (token: string, limit?: number) =>
     request<{ bankTransactions: BankTransactionRow[]; matchingResults: MatchingResultRow[] }>(
@@ -354,6 +390,8 @@ export interface ProductRow {
   status: string;
   requires_manual_confirmation: boolean;
   ai_visible: boolean;
+  is_cod_allowed?: boolean;
+  requires_manual_cod_confirmation?: boolean;
   created_at?: string;
   updated_at?: string;
 }
@@ -370,6 +408,8 @@ export interface CreateProductBody {
   status?: string;
   requires_manual_confirmation?: boolean;
   ai_visible?: boolean;
+  is_cod_allowed?: boolean;
+  requires_manual_cod_confirmation?: boolean;
 }
 
 export const productsApi = {
@@ -552,6 +592,12 @@ export interface CreatePaymentAccountBody {
   sort_order?: number;
   notes?: string | null;
 }
+
+export const paymentMethodSettingsApi = {
+  get: (token: string) => request<MerchantCodSettings>('/merchant/payment-method-settings', { token }),
+  update: (token: string, body: Partial<MerchantCodSettings>) =>
+    request<MerchantCodSettings>('/merchant/payment-method-settings', { method: 'PATCH', token, body }),
+};
 
 export const paymentAccountsApi = {
   list: (token: string, params?: { activeOnly?: boolean }) => {

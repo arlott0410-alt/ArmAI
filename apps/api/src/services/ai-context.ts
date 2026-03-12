@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import * as catalog from './catalog.js';
 import * as knowledge from './knowledge.js';
 import * as orderDraft from './order-draft.js';
+import * as codSettings from './cod-settings.js';
 
 const PLATFORM_SYSTEM_PROMPT = `You are a merchant chatbot. Rules:
 - Never invent products, prices, payment accounts, or QR codes. Use only the structured context provided.
@@ -28,6 +29,7 @@ export interface BuiltContext {
     knowledgeEntries: unknown[];
     currentOrderSummary: string | null;
     paymentTargetForOrder: unknown | null;
+    codSettings: unknown | null;
   };
 }
 
@@ -36,12 +38,13 @@ export interface BuiltContext {
  */
 export async function buildAiContext(supabase: SupabaseClient, input: AiContextInput): Promise<BuiltContext> {
   const { merchantId, merchantPrompt, conversationId, orderId } = input;
-  const [products, categories, faqs, promotions, knowledgeEntries] = await Promise.all([
+  const [products, categories, faqs, promotions, knowledgeEntries, codSettingsRow] = await Promise.all([
     catalog.listProducts(supabase, merchantId, { status: 'active', aiVisibleOnly: true }),
     catalog.listCategories(supabase, merchantId, true),
     knowledge.listFaqs(supabase, merchantId, true),
     knowledge.listPromotions(supabase, merchantId, true),
     knowledge.listKnowledgeEntries(supabase, merchantId, { activeOnly: true }),
+    codSettings.getMerchantCodSettings(supabase, merchantId),
   ]);
   let currentOrderSummary: string | null = null;
   let paymentTargetForOrder: unknown = null;
@@ -81,6 +84,16 @@ export async function buildAiContext(supabase: SupabaseClient, input: AiContextI
       knowledgeEntries,
       currentOrderSummary,
       paymentTargetForOrder,
+      codSettings: codSettingsRow ? {
+        enable_cod: codSettingsRow.enable_cod,
+        cod_min_order_amount: codSettingsRow.cod_min_order_amount,
+        cod_max_order_amount: codSettingsRow.cod_max_order_amount,
+        cod_fee_amount: codSettingsRow.cod_fee_amount,
+        require_phone_for_cod: codSettingsRow.require_phone_for_cod,
+        require_full_address_for_cod: codSettingsRow.require_full_address_for_cod,
+        cod_requires_manual_confirmation: codSettingsRow.cod_requires_manual_confirmation,
+        cod_notes_for_ai: codSettingsRow.cod_notes_for_ai,
+      } : null,
     },
   };
 }

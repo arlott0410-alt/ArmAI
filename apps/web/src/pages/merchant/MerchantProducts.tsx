@@ -49,6 +49,8 @@ export default function MerchantProducts() {
     status: 'active',
     requires_manual_confirmation: false,
     ai_visible: true,
+    is_cod_allowed: true,
+    requires_manual_cod_confirmation: false,
   });
 
   const load = useCallback(() => {
@@ -89,6 +91,8 @@ export default function MerchantProducts() {
       status: 'active',
       requires_manual_confirmation: false,
       ai_visible: true,
+      is_cod_allowed: true,
+      requires_manual_cod_confirmation: false,
     });
     setFormError(null);
     setModalOpen(true);
@@ -108,6 +112,8 @@ export default function MerchantProducts() {
       status: p.status,
       requires_manual_confirmation: p.requires_manual_confirmation,
       ai_visible: p.ai_visible,
+      is_cod_allowed: p.is_cod_allowed ?? true,
+      requires_manual_cod_confirmation: p.requires_manual_cod_confirmation ?? false,
     });
     setFormError(null);
     setModalOpen(true);
@@ -400,6 +406,24 @@ export default function MerchantProducts() {
             style={{ marginRight: 8 }}
           />
           <span style={{ fontSize: 13, color: theme.textSecondary }}>Show to AI</span>
+        </FieldGroup>
+        <FieldGroup label="COD allowed">
+          <input
+            type="checkbox"
+            checked={form.is_cod_allowed ?? true}
+            onChange={(e) => setForm((f) => ({ ...f, is_cod_allowed: e.target.checked }))}
+            style={{ marginRight: 8 }}
+          />
+          <span style={{ fontSize: 13, color: theme.textSecondary }}>Allow Cash on Delivery for this product</span>
+        </FieldGroup>
+        <FieldGroup label="COD requires manual confirmation">
+          <input
+            type="checkbox"
+            checked={form.requires_manual_cod_confirmation ?? false}
+            onChange={(e) => setForm((f) => ({ ...f, requires_manual_cod_confirmation: e.target.checked }))}
+            style={{ marginRight: 8 }}
+          />
+          <span style={{ fontSize: 13, color: theme.textSecondary }}>Merchant must confirm before COD is ready to ship</span>
         </FieldGroup>
       </FormModal>
     </PageShell>
