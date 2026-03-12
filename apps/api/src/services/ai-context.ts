@@ -30,6 +30,7 @@ export interface BuiltContext {
     currentOrderSummary: string | null;
     paymentTargetForOrder: unknown | null;
     codSettings: unknown | null;
+    shipmentForOrder: unknown | null;
   };
 }
 
@@ -48,28 +49,83 @@ export async function buildAiContext(supabase: SupabaseClient, input: AiContextI
   ]);
   let currentOrderSummary: string | null = null;
   let paymentTargetForOrder: unknown = null;
-  if (orderId) {
-    const target = await orderDraft.getOrderPaymentTarget(supabase, merchantId, orderId);
+  let shipmentContext: unknown = null;
+  const resolveOrderId = orderId ?? (conversationId ? (await supabase
+    .from('orders')
+    .select('id')
+    .eq('merchant_id', merchantId)
+    .eq('conversation_id', conversationId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  ).data?.id : null);
+  if (resolveOrderId) {
+    const target = await orderDraft.getOrderPaymentTarget(supabase, merchantId, resolveOrderId);
     paymentTargetForOrder = target;
-    const { data: order } = await supabase.from('orders').select('id, status, amount').eq('id', orderId).eq('merchant_id', merchantId).single();
+    const { data: order } = await supabase.from('orders').select('id, status, amount, payment_status, fulfillment_status').eq('id', resolveOrderId).eq('merchant_id', merchantId).single();
     if (order) {
-      const { data: orderItems } = await supabase.from('order_items').select('product_name_snapshot, quantity, unit_price, total_price').eq('order_id', orderId);
+      const { data: orderItems } = await supabase.from('order_items').select('product_name_snapshot, quantity, unit_price, total_price').eq('order_id', resolveOrderId);
       const lines = (orderItems ?? []).map((i) => `${i.product_name_snapshot} x${i.quantity} = ${i.total_price}`).join('; ');
-      currentOrderSummary = `Order ${order.id} (${order.status}): ${order.amount} total. Items: ${lines}`;
+      let summary = `Order ${order.id} (${order.status}), payment: ${order.payment_status}, fulfillment: ${order.fulfillment_status ?? 'n/a'}. Amount: ${order.amount}. Items: ${lines}`;
+      const { data: latestShipment } = await supabase
+        .from('order_shipments')
+        .select('courier_name, tracking_number, tracking_url, shipped_at, shipping_note, shipment_status')
+        .eq('order_id', resolveOrderId)
+        .eq('merchant_id', merchantId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (latestShipment) {
+        shipmentContext = {
+          order_number: order.id,
+          payment_status: order.payment_status,
+          fulfillment_status: order.fulfillment_status,
+          courier_name: latestShipment.courier_name,
+          tracking_number: latestShipment.tracking_number,
+          tracking_url: latestShipment.tracking_url,
+          shipped_at: latestShipment.shipped_at,
+          shipping_note: latestShipment.shipping_note,
+          shipment_status: latestShipment.shipment_status,
+        };
+        summary += ` Shipment: courier ${latestShipment.courier_name ?? 'n/a'}, tracking ${latestShipment.tracking_number ?? 'n/a'}, shipped_at ${latestShipment.shipped_at ?? 'n/a'}.`;
+      }
+      currentOrderSummary = summary;
     }
-  } else if (conversationId) {
+  }
+  if (!currentOrderSummary && conversationId) {
     const { data: recentOrder } = await supabase
       .from('orders')
-      .select('id, status, amount')
+      .select('id, status, amount, payment_status, fulfillment_status')
       .eq('merchant_id', merchantId)
       .eq('conversation_id', conversationId)
       .order('created_at', { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle();
     if (recentOrder) {
       const target = await orderDraft.getOrderPaymentTarget(supabase, merchantId, recentOrder.id);
       paymentTargetForOrder = target;
-      currentOrderSummary = `Latest order: ${recentOrder.id} (${recentOrder.status}), amount ${recentOrder.amount}.`;
+      const { data: latestShipment } = await supabase
+        .from('order_shipments')
+        .select('courier_name, tracking_number, tracking_url, shipped_at, shipping_note, shipment_status')
+        .eq('order_id', recentOrder.id)
+        .eq('merchant_id', merchantId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (latestShipment) {
+        shipmentContext = {
+          order_number: recentOrder.id,
+          payment_status: recentOrder.payment_status,
+          fulfillment_status: recentOrder.fulfillment_status,
+          courier_name: latestShipment.courier_name,
+          tracking_number: latestShipment.tracking_number,
+          tracking_url: latestShipment.tracking_url,
+          shipped_at: latestShipment.shipped_at,
+          shipping_note: latestShipment.shipping_note,
+          shipment_status: latestShipment.shipment_status,
+        };
+      }
+      currentOrderSummary = `Latest order: ${recentOrder.id} (${recentOrder.status}), payment ${recentOrder.payment_status}, fulfillment ${recentOrder.fulfillment_status ?? 'n/a'}, amount ${recentOrder.amount}.`;
     }
   }
   const merchantSection = merchantPrompt ? `\n\nMerchant instructions:\n${merchantPrompt}` : '';
@@ -94,6 +150,7 @@ export async function buildAiContext(supabase: SupabaseClient, input: AiContextI
         cod_requires_manual_confirmation: codSettingsRow.cod_requires_manual_confirmation,
         cod_notes_for_ai: codSettingsRow.cod_notes_for_ai,
       } : null,
+      shipmentForOrder: shipmentContext,
     },
   };
 }

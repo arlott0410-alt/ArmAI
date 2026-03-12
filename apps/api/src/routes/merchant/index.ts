@@ -13,6 +13,7 @@ import paymentAccountsRoutes from './payment-accounts.js';
 import bankSyncRoutes from './bank-sync.js';
 import paymentMethodSettingsRoutes from './payment-method-settings.js';
 import ordersRoutes from './orders.js';
+import shipmentsRoutes from './shipments.js';
 
 const app = new Hono<{
   Bindings: Env;
@@ -42,6 +43,7 @@ app.get('/readiness', async (c) => {
 });
 
 app.route('/orders', ordersRoutes);
+app.route('/shipments', shipmentsRoutes);
 app.route('/payment-method-settings', paymentMethodSettingsRoutes);
 
 app.route('/bank-sync', bankSyncRoutes);

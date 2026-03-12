@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { merchantApi, type OrderDetailResponse } from '../../lib/api';
-import { PageShell, PanelCard, StatusBadge, Badge } from '../../components/ui';
+import { merchantApi, type OrderDetailResponse, type ShipmentRow, type CreateShipmentBody } from '../../lib/api';
+import { PageShell, PanelCard, StatusBadge, Badge, FulfillmentStatusBadge } from '../../components/ui';
 import { theme } from '../../theme';
 
 const paymentMethodLabel: Record<string, string> = {
@@ -20,6 +20,9 @@ export default function MerchantOrderDetail() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [showShipmentForm, setShowShipmentForm] = useState(false);
+  const [shipmentForm, setShipmentForm] = useState<CreateShipmentBody>({});
+  const [creatingShipment, setCreatingShipment] = useState(false);
 
   const load = () => {
     if (!token || !orderId) return;
@@ -85,6 +88,7 @@ export default function MerchantOrderDetail() {
             <div><span style={{ fontSize: 12, color: theme.textMuted, marginRight: 8 }}>Status</span><StatusBadge status={order.status} /></div>
             <div><span style={{ fontSize: 12, color: theme.textMuted, marginRight: 8 }}>Payment method</span><Badge variant={isCod ? 'gold' : 'default'}>{paymentMethodLabel[order.payment_method ?? ''] ?? order.payment_method}</Badge></div>
             <div><span style={{ fontSize: 12, color: theme.textMuted, marginRight: 8 }}>Payment status</span><span style={{ fontSize: 13 }}>{order.payment_status ?? '—'}</span></div>
+            <div><span style={{ fontSize: 12, color: theme.textMuted, marginRight: 8 }}>Fulfillment</span><FulfillmentStatusBadge status={order.fulfillment_status} /></div>
             <div><span style={{ fontSize: 12, color: theme.textMuted, marginRight: 8 }}>Switch count</span><span style={{ fontSize: 13 }}>{order.payment_switch_count ?? 0}</span></div>
             <div><span style={{ fontSize: 12, color: theme.textMuted, marginRight: 8 }}>Amount</span><span style={{ fontSize: 13 }}>{order.amount ?? '—'}</span></div>
             <div><span style={{ fontSize: 12, color: theme.textMuted, marginRight: 8 }}>Customer</span><span style={{ fontSize: 13 }}>{order.customer_name ?? '—'}</span></div>
@@ -161,6 +165,137 @@ export default function MerchantOrderDetail() {
                 </button>
               )}
             </div>
+          </PanelCard>
+        )}
+
+        {/* Fulfillment: shipments and create form */}
+        {(order.payment_status === 'paid' || order.payment_status === 'cod_collected' || (order.shipments?.length ?? 0) > 0) && (
+          <PanelCard title="Fulfillment" subtitle="Shipment and delivery">
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', marginBottom: 16 }}>
+              <span style={{ fontSize: 12, color: theme.textMuted }}>Payment status</span>
+              <span style={{ fontSize: 13 }}>{order.payment_status ?? '—'}</span>
+              <span style={{ fontSize: 12, color: theme.textMuted, marginLeft: 12 }}>Fulfillment status</span>
+              <FulfillmentStatusBadge status={order.fulfillment_status} />
+            </div>
+            {(order.shipments?.length ?? 0) > 0 && (
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: theme.textMuted, marginBottom: 8 }}>Shipments</div>
+                {(order.shipments ?? []).map((s: ShipmentRow) => (
+                  <div
+                    key={s.id}
+                    style={{
+                      padding: 12,
+                      background: theme.surfaceElevated,
+                      border: `1px solid ${theme.borderMuted}`,
+                      borderRadius: 8,
+                      marginBottom: 8,
+                      fontSize: 13,
+                    }}
+                  >
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 8 }}>
+                      <span><strong style={{ color: theme.textMuted }}>Courier</strong> {s.courier_name ?? '—'}</span>
+                      <span><strong style={{ color: theme.textMuted }}>Tracking</strong> {s.tracking_number ?? '—'}</span>
+                      {s.tracking_url && <a href={s.tracking_url} target="_blank" rel="noopener noreferrer" style={{ color: theme.primary }}>Track</a>}
+                      <span><strong style={{ color: theme.textMuted }}>Shipped</strong> {s.shipped_at ? new Date(s.shipped_at).toLocaleString() : '—'}</span>
+                      <span><strong style={{ color: theme.textMuted }}>Status</strong> {s.shipment_status}</span>
+                    </div>
+                    {s.shipping_note && <div style={{ color: theme.textSecondary, marginBottom: 8 }}>{s.shipping_note}</div>}
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      {s.shipment_status !== 'shipped' && s.shipment_status !== 'in_transit' && (
+                        <button
+                          type="button"
+                          onClick={() => token && runAction(() => merchantApi.updateShipment(token, s.id, { shipment_status: 'shipped', shipped_at: new Date().toISOString() }))}
+                          style={{ padding: '6px 12px', background: theme.surfaceElevated, border: `1px solid ${theme.borderMuted}`, borderRadius: 6, color: theme.text, fontSize: 12, cursor: 'pointer' }}
+                        >
+                          Mark shipped
+                        </button>
+                      )}
+                      {s.shipment_status !== 'delivered' && (
+                        <button
+                          type="button"
+                          onClick={() => token && runAction(() => merchantApi.updateShipment(token, s.id, { shipment_status: 'delivered', delivered_at: new Date().toISOString() }))}
+                          style={{ padding: '6px 12px', background: theme.success, color: theme.background, border: 0, borderRadius: 6, fontSize: 12, cursor: 'pointer' }}
+                        >
+                          Mark delivered
+                        </button>
+                      )}
+                      {s.shipment_status !== 'failed' && (
+                        <button
+                          type="button"
+                          onClick={() => token && runAction(() => merchantApi.updateShipment(token, s.id, { shipment_status: 'failed' }))}
+                          style={{ padding: '6px 12px', background: theme.dangerMuted, color: theme.danger, border: `1px solid ${theme.danger}`, borderRadius: 6, fontSize: 12, cursor: 'pointer' }}
+                        >
+                          Mark failed
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => token && runAction(() => merchantApi.sendShipmentConfirmation(token, s.id))}
+                        style={{ padding: '6px 12px', background: 'transparent', border: `1px solid ${theme.primary}`, borderRadius: 6, color: theme.primary, fontSize: 12, cursor: 'pointer' }}
+                      >
+                        Send confirmation to customer
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {!showShipmentForm && (
+              <button
+                type="button"
+                onClick={() => setShowShipmentForm(true)}
+                style={{ padding: '8px 16px', background: theme.primary, color: theme.background, border: 0, borderRadius: 6, fontWeight: 600, fontSize: 13, cursor: 'pointer' }}
+              >
+                {(order.shipments?.length ?? 0) === 0 ? 'Create shipment' : 'Add another shipment'}
+              </button>
+            )}
+            {showShipmentForm && (
+              <div style={{ padding: 12, background: theme.surfaceElevated, borderRadius: 8, border: `1px solid ${theme.borderMuted}` }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: theme.textMuted, marginBottom: 12 }}>New shipment</div>
+                <div style={{ display: 'grid', gap: 10, maxWidth: 400 }}>
+                  <input placeholder="Courier name" value={shipmentForm.courier_name ?? ''} onChange={(e) => setShipmentForm((f) => ({ ...f, courier_name: e.target.value || undefined }))} style={{ padding: 8, background: theme.surface, border: `1px solid ${theme.borderMuted}`, borderRadius: 6, color: theme.text }} />
+                  <input placeholder="Tracking number" value={shipmentForm.tracking_number ?? ''} onChange={(e) => setShipmentForm((f) => ({ ...f, tracking_number: e.target.value || undefined }))} style={{ padding: 8, background: theme.surface, border: `1px solid ${theme.borderMuted}`, borderRadius: 6, color: theme.text }} />
+                  <input placeholder="Tracking URL" value={shipmentForm.tracking_url ?? ''} onChange={(e) => setShipmentForm((f) => ({ ...f, tracking_url: e.target.value || undefined }))} style={{ padding: 8, background: theme.surface, border: `1px solid ${theme.borderMuted}`, borderRadius: 6, color: theme.text }} />
+                  <input placeholder="Shipping note" value={shipmentForm.shipping_note ?? ''} onChange={(e) => setShipmentForm((f) => ({ ...f, shipping_note: e.target.value || undefined }))} style={{ padding: 8, background: theme.surface, border: `1px solid ${theme.borderMuted}`, borderRadius: 6, color: theme.text }} />
+                </div>
+                <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                  <button
+                    type="button"
+                    disabled={creatingShipment}
+                    onClick={async () => {
+                      if (!token || !orderId) return;
+                      setCreatingShipment(true);
+                      setActionError(null);
+                      try {
+                        const res = await merchantApi.createShipment(token, orderId, shipmentForm);
+                        if (res.order) setOrder(res.order);
+                        else load();
+                        setShowShipmentForm(false);
+                        setShipmentForm({});
+                      } catch (e) {
+                        setActionError(e instanceof Error ? e.message : 'Create failed');
+                      } finally {
+                        setCreatingShipment(false);
+                      }
+                    }}
+                    style={{ padding: '8px 16px', background: theme.primary, color: theme.background, border: 0, borderRadius: 6, fontWeight: 600, fontSize: 13, cursor: creatingShipment ? 'not-allowed' : 'pointer' }}
+                  >
+                    {creatingShipment ? 'Saving…' : 'Save shipment'}
+                  </button>
+                  <button type="button" onClick={() => { setShowShipmentForm(false); setShipmentForm({}); }} style={{ padding: '8px 16px', background: 'transparent', border: `1px solid ${theme.borderMuted}`, borderRadius: 6, color: theme.textSecondary, fontSize: 13, cursor: 'pointer' }}>Cancel</button>
+                </div>
+              </div>
+            )}
+            {order.fulfillment_events?.length ? (
+              <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${theme.borderMuted}` }}>
+                <div style={{ fontSize: 11, color: theme.textMuted, marginBottom: 6 }}>Fulfillment history</div>
+                <ul style={{ margin: 0, paddingLeft: 20, fontSize: 12, color: theme.textSecondary }}>
+                  {order.fulfillment_events.slice(0, 10).map((ev) => (
+                    <li key={ev.id}>{ev.event_type} — {new Date(ev.created_at).toLocaleString()}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
           </PanelCard>
         )}
 

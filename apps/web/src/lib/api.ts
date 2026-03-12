@@ -161,6 +161,33 @@ export interface OrderRow {
   reference_code: string | null;
   created_at: string;
   updated_at: string;
+  fulfillment_status?: string | null;
+}
+
+export interface ShipmentRow {
+  id: string;
+  merchant_id: string;
+  order_id: string;
+  courier_name: string | null;
+  shipment_method: string;
+  tracking_number: string | null;
+  tracking_url: string | null;
+  shipping_note: string | null;
+  shipment_status: string;
+  shipped_at: string | null;
+  delivered_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface FulfillmentEventRow {
+  id: string;
+  order_id: string;
+  shipment_id: string | null;
+  event_type: string;
+  event_note: string | null;
+  actor_type: string;
+  created_at: string;
 }
 
 export interface OrderDetailResponse extends OrderRow {
@@ -169,6 +196,17 @@ export interface OrderDetailResponse extends OrderRow {
   cod_details: Record<string, unknown> | null;
   payment_target: Record<string, unknown> | null;
   payment_method_events: { id: string; from_method: string; to_method: string; switch_result: string; reason: string | null; requested_by_type: string; created_at: string }[];
+  shipments?: ShipmentRow[];
+  fulfillment_events?: FulfillmentEventRow[];
+}
+
+export interface CreateShipmentBody {
+  courier_name?: string | null;
+  shipment_method?: string;
+  tracking_number?: string | null;
+  tracking_url?: string | null;
+  shipping_note?: string | null;
+  shipped_at?: string | null;
 }
 
 export interface MerchantCodSettings {
@@ -185,16 +223,24 @@ export interface MerchantCodSettings {
 
 export const merchantApi = {
   dashboard: (token: string) => request<MerchantDashboardResponse>('/merchant/dashboard', { token }),
-  orders: (token: string, params?: { status?: string; payment_method?: string; limit?: number }) => {
+  orders: (token: string, params?: { status?: string; payment_method?: string; fulfillment_status?: string; limit?: number }) => {
     const q = new URLSearchParams();
     if (params?.status) q.set('status', params.status);
     if (params?.payment_method) q.set('payment_method', params.payment_method);
+    if (params?.fulfillment_status) q.set('fulfillment_status', params.fulfillment_status);
     if (params?.limit) q.set('limit', String(params.limit));
     const query = q.toString();
     return request<{ orders: OrderRow[] }>(`/merchant/orders${query ? `?${query}` : ''}`, { token });
   },
   order: (token: string, orderId: string) => request<OrderRow>(`/merchant/orders/${orderId}`, { token }),
   orderDetail: (token: string, orderId: string) => request<OrderDetailResponse>(`/merchant/orders/${orderId}`, { token }),
+  orderShipments: (token: string, orderId: string) => request<{ shipments: ShipmentRow[] }>(`/merchant/orders/${orderId}/shipments`, { token }),
+  createShipment: (token: string, orderId: string, body: CreateShipmentBody) =>
+    request<{ shipment: ShipmentRow; order: OrderDetailResponse }>(`/merchant/orders/${orderId}/shipments`, { method: 'POST', token, body }),
+  updateShipment: (token: string, shipmentId: string, body: Partial<CreateShipmentBody> & { shipment_status?: string; delivered_at?: string | null }) =>
+    request<{ shipment: ShipmentRow }>(`/merchant/shipments/${shipmentId}`, { method: 'PATCH', token, body }),
+  sendShipmentConfirmation: (token: string, shipmentId: string) =>
+    request<{ sent: boolean; message?: string }>(`/merchant/shipments/${shipmentId}/send-confirmation`, { method: 'POST', token }),
   orderSwitchPaymentMethod: (token: string, orderId: string, body: { desired_method: string; requested_by?: string }) =>
     request<{ ok: boolean; order?: OrderDetailResponse }>(`/merchant/orders/${orderId}/payment-method/switch`, { method: 'POST', token, body }),
   orderCodConfirm: (token: string, orderId: string) =>
@@ -434,11 +480,12 @@ export interface MerchantSettingsResponse {
   ai_system_prompt: string | null;
   bank_parser_id: string | null;
   webhook_verify_token: string | null;
+  auto_send_shipping_confirmation?: boolean;
 }
 
 export const settingsApi = {
   get: (token: string) => request<MerchantSettingsResponse>('/settings', { token }),
-  update: (token: string, body: Partial<{ ai_system_prompt: string | null; bank_parser_id: string | null; webhook_verify_token: string | null }>) =>
+  update: (token: string, body: Partial<{ ai_system_prompt: string | null; bank_parser_id: string | null; webhook_verify_token: string | null; auto_send_shipping_confirmation?: boolean }>) =>
     request<{ ok: boolean }>('/settings', { method: 'PATCH', token, body }),
 };
 

@@ -14,6 +14,7 @@ export const updateMerchantSettingsBodySchema = z.object({
   ai_system_prompt: z.string().max(10000).nullable().optional(),
   bank_parser_id: z.string().uuid().nullable().optional(),
   webhook_verify_token: z.string().max(255).nullable().optional(),
+  auto_send_shipping_confirmation: z.boolean().optional(),
 });
 
 export type UpdateMerchantSettingsBody = z.infer<typeof updateMerchantSettingsBodySchema>;

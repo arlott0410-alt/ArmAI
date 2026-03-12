@@ -33,6 +33,7 @@ app.patch('/', async (c) => {
   if (parsed.data.ai_system_prompt !== undefined) update.ai_system_prompt = parsed.data.ai_system_prompt;
   if (parsed.data.bank_parser_id !== undefined) update.bank_parser_id = parsed.data.bank_parser_id;
   if (parsed.data.webhook_verify_token !== undefined) update.webhook_verify_token = parsed.data.webhook_verify_token;
+  if (parsed.data.auto_send_shipping_confirmation !== undefined) update.auto_send_shipping_confirmation = parsed.data.auto_send_shipping_confirmation;
   const { error } = await supabase.from('merchant_settings').upsert(
     { merchant_id: merchantId, ...update },
     { onConflict: 'merchant_id' }

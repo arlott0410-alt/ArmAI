@@ -93,3 +93,30 @@ export const PAYMENT_SWITCH_REQUESTED_BY = {
 
 /** Switch count above which manual confirmation may be required. */
 export const PAYMENT_SWITCH_CONFIRMATION_THRESHOLD = 2;
+
+/** Order fulfillment lifecycle (post-payment). */
+export const FULFILLMENT_STATUS = {
+  PENDING_FULFILLMENT: 'pending_fulfillment',
+  PACKED: 'packed',
+  SHIPPED: 'shipped',
+  DELIVERED: 'delivered',
+  DELIVERY_FAILED: 'delivery_failed',
+  CANCELLED: 'cancelled',
+} as const;
+
+/** Shipment record status. */
+export const SHIPMENT_STATUS = {
+  PENDING: 'pending',
+  SHIPPED: 'shipped',
+  IN_TRANSIT: 'in_transit',
+  DELIVERED: 'delivered',
+  FAILED: 'failed',
+} as const;
+
+/** Shipment method. */
+export const SHIPMENT_METHOD = {
+  COURIER_TRACKING: 'courier_tracking',
+  LOCAL_DELIVERY: 'local_delivery',
+  PICKUP: 'pickup',
+  MANUAL_DISPATCH: 'manual_dispatch',
+} as const;

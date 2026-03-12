@@ -6,7 +6,9 @@ import * as orderDetail from '../../services/order-detail.js';
 import * as codSettings from '../../services/cod-settings.js';
 import * as paymentMethodSwitch from '../../services/payment-method-switch.js';
 import * as paymentAccounts from '../../services/payment-accounts.js';
+import * as fulfillment from '../../services/fulfillment.js';
 import { PAYMENT_METHOD, PAYMENT_SWITCH_RESULT, ORDER_COD_STATUS, PAYMENT_STATUS, ORDER_STATUS } from '@armai/shared';
+import { createShipmentBodySchema } from '@armai/shared';
 
 const app = new Hono<{
   Bindings: Env;
@@ -17,9 +19,10 @@ app.get('/', async (c) => {
   const supabase = getSupabaseAdmin(c.env);
   const merchantId = c.get('merchantId');
   const status = c.req.query('status');
+  const fulfillment_status = c.req.query('fulfillment_status');
   const payment_method = c.req.query('payment_method');
   const limit = c.req.query('limit') ? parseInt(c.req.query('limit'), 10) : 50;
-  let list = await orderService.listOrders(supabase, merchantId, { status, limit });
+  let list = await orderService.listOrders(supabase, merchantId, { status, fulfillment_status, limit });
   if (payment_method) {
     list = list.filter((o: { payment_method?: string }) => o.payment_method === payment_method);
   }
@@ -208,9 +211,16 @@ app.post('/:orderId/cod/mark-collected', async (c) => {
       updated_at: now,
     })
     .eq('id', cod.id);
+  const { data: orderRow } = await supabase.from('orders').select('fulfillment_status').eq('id', orderId).eq('merchant_id', merchantId).single();
+  const fulfillmentStatus = orderRow?.fulfillment_status == null ? 'pending_fulfillment' : undefined;
   await supabase
     .from('orders')
-    .update({ status: ORDER_STATUS.PAID, payment_status: PAYMENT_STATUS.COD_COLLECTED, updated_at: now })
+    .update({
+      status: ORDER_STATUS.PAID,
+      payment_status: PAYMENT_STATUS.COD_COLLECTED,
+      ...(fulfillmentStatus && { fulfillment_status: fulfillmentStatus }),
+      updated_at: now,
+    })
     .eq('id', orderId)
     .eq('merchant_id', merchantId);
   const detail = await orderDetail.getOrderDetail(supabase, merchantId, orderId);
@@ -241,6 +251,46 @@ app.post('/:orderId/cod/mark-failed', async (c) => {
     .eq('merchant_id', merchantId);
   const detail = await orderDetail.getOrderDetail(supabase, merchantId, orderId);
   return c.json({ ok: true, order: detail });
+});
+
+app.get('/:orderId/shipments', async (c) => {
+  const supabase = getSupabaseAdmin(c.env);
+  const merchantId = c.get('merchantId');
+  const orderId = c.req.param('orderId');
+  await orderService.getOrder(supabase, merchantId, orderId);
+  const { data } = await supabase
+    .from('order_shipments')
+    .select('*')
+    .eq('order_id', orderId)
+    .eq('merchant_id', merchantId)
+    .order('created_at', { ascending: false });
+  return c.json({ shipments: data ?? [] });
+});
+
+app.post('/:orderId/shipments', async (c) => {
+  const supabase = getSupabaseAdmin(c.env);
+  const merchantId = c.get('merchantId');
+  const orderId = c.req.param('orderId');
+  const body = await c.req.json().catch(() => ({}));
+  const parsed = createShipmentBodySchema.safeParse(body);
+  if (!parsed.success) return c.json({ error: 'Validation failed', details: parsed.error.flatten() }, 400);
+  await orderService.getOrder(supabase, merchantId, orderId);
+  const shipment = await fulfillment.createShipment(supabase, {
+    merchantId,
+    orderId,
+    body: parsed.data,
+    createdBy: c.get('auth')?.userId ?? null,
+  });
+  const { data: settings } = await supabase.from('merchant_settings').select('auto_send_shipping_confirmation').eq('merchant_id', merchantId).single();
+  if (settings?.auto_send_shipping_confirmation) {
+    try {
+      await fulfillment.sendShippingConfirmation(supabase, { merchantId, orderId, shipmentId: shipment.id });
+    } catch {
+      // non-fatal
+    }
+  }
+  const detail = await orderDetail.getOrderDetail(supabase, merchantId, orderId);
+  return c.json({ shipment, order: detail }, 201);
 });
 
 export default app;

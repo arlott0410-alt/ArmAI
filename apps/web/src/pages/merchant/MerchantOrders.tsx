@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { merchantApi, type OrderRow } from '../../lib/api';
-import { PageShell, Card, CardBody, StatusBadge, Badge, EmptyState } from '../../components/ui';
+import { PageShell, Card, CardBody, StatusBadge, Badge, EmptyState, FulfillmentStatusBadge } from '../../components/ui';
 import { theme } from '../../theme';
 
 const paymentMethodLabel: Record<string, string> = {
@@ -21,11 +21,12 @@ export default function MerchantOrders() {
   const token = user?.accessToken ?? null;
   const statusFilter = searchParams.get('status') ?? '';
   const paymentMethodFilter = searchParams.get('payment_method') ?? '';
+  const fulfillmentFilter = searchParams.get('fulfillment_status') ?? '';
 
   useEffect(() => {
     if (!token) return;
     merchantApi
-      .orders(token, { status: statusFilter || undefined, payment_method: paymentMethodFilter || undefined, limit: 50 })
+      .orders(token, { status: statusFilter || undefined, payment_method: paymentMethodFilter || undefined, fulfillment_status: fulfillmentFilter || undefined, limit: 50 })
       .then((r) => {
         setOrders(r.orders);
         setLoading(false);
@@ -34,7 +35,7 @@ export default function MerchantOrders() {
         setError(e.message);
         setLoading(false);
       });
-  }, [token, statusFilter, paymentMethodFilter]);
+  }, [token, statusFilter, paymentMethodFilter, fulfillmentFilter]);
 
   if (error) return <p style={{ color: theme.danger }}>{error}</p>;
   if (loading) return <p style={{ color: theme.textSecondary }}>Loading...</p>;
@@ -45,7 +46,7 @@ export default function MerchantOrders() {
         <span style={{ fontSize: 12, color: theme.textMuted }}>Status</span>
         <select
           value={statusFilter}
-          onChange={(e) => setSearchParams({ status: e.target.value || '', payment_method: paymentMethodFilter })}
+          onChange={(e) => setSearchParams({ ...Object.fromEntries(searchParams), status: e.target.value || '' })}
           style={{
             padding: '6px 10px',
             background: theme.surfaceElevated,
@@ -60,10 +61,29 @@ export default function MerchantOrders() {
           <option value="paid">Paid</option>
           <option value="cancelled">Cancelled</option>
         </select>
+        <span style={{ fontSize: 12, color: theme.textMuted, marginLeft: 8 }}>Fulfillment</span>
+        <select
+          value={fulfillmentFilter}
+          onChange={(e) => setSearchParams({ ...Object.fromEntries(searchParams), fulfillment_status: e.target.value || '' })}
+          style={{
+            padding: '6px 10px',
+            background: theme.surfaceElevated,
+            border: `1px solid ${theme.borderMuted}`,
+            borderRadius: 6,
+            color: theme.text,
+            fontSize: 13,
+          }}
+        >
+          <option value="">All</option>
+          <option value="pending_fulfillment">Ready to fulfill</option>
+          <option value="shipped">Shipped</option>
+          <option value="delivered">Delivered</option>
+          <option value="delivery_failed">Delivery failed</option>
+        </select>
         <span style={{ fontSize: 12, color: theme.textMuted, marginLeft: 8 }}>Payment</span>
         <select
           value={paymentMethodFilter}
-          onChange={(e) => setSearchParams({ status: statusFilter, payment_method: e.target.value || '' })}
+          onChange={(e) => setSearchParams({ ...Object.fromEntries(searchParams), payment_method: e.target.value || '' })}
           style={{
             padding: '6px 10px',
             background: theme.surfaceElevated,
@@ -91,6 +111,7 @@ export default function MerchantOrders() {
                   <th style={{ padding: '12px 16px', color: theme.textMuted, fontWeight: 600, fontSize: 11, textTransform: 'uppercase' }}>Payment</th>
                   <th style={{ padding: '12px 16px', color: theme.textMuted, fontWeight: 600, fontSize: 11, textTransform: 'uppercase' }}>Customer</th>
                   <th style={{ padding: '12px 16px', color: theme.textMuted, fontWeight: 600, fontSize: 11, textTransform: 'uppercase' }}>Amount</th>
+                  <th style={{ padding: '12px 16px', color: theme.textMuted, fontWeight: 600, fontSize: 11, textTransform: 'uppercase' }}>Fulfillment</th>
                   <th style={{ padding: '12px 16px', color: theme.textMuted, fontWeight: 600, fontSize: 11, textTransform: 'uppercase' }}>Reference</th>
                   <th style={{ padding: '12px 16px', color: theme.textMuted, fontWeight: 600, fontSize: 11, textTransform: 'uppercase' }}>Created</th>
                 </tr>
@@ -110,6 +131,7 @@ export default function MerchantOrders() {
                     </td>
                     <td style={{ padding: '12px 16px' }}>{o.customer_name ?? '—'}</td>
                     <td style={{ padding: '12px 16px' }}>{o.amount ?? '—'}</td>
+                    <td style={{ padding: '12px 16px' }}><FulfillmentStatusBadge status={o.fulfillment_status} /></td>
                     <td style={{ padding: '12px 16px' }}>{o.reference_code ?? '—'}</td>
                     <td style={{ padding: '12px 16px' }}>{new Date(o.created_at).toLocaleString()}</td>
                   </tr>

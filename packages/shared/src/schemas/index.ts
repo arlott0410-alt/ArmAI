@@ -2,6 +2,7 @@ export * from './auth.js';
 export * from './merchant.js';
 export * from './billing.js';
 export * from './orders.js';
+export * from './fulfillment.js';
 export * from './webhooks.js';
 export * from './bank.js';
 export * from './catalog.js';

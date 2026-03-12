@@ -1,10 +1,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { ORDER_STATUS, MATCHING_RESULT_STATUS } from '@armai/shared';
+import { ORDER_STATUS, MATCHING_RESULT_STATUS, PAYMENT_STATUS, FULFILLMENT_STATUS } from '@armai/shared';
 
 export async function listOrders(
   supabase: SupabaseClient,
   merchantId: string,
-  opts: { status?: string; limit?: number } = {}
+  opts: { status?: string; fulfillment_status?: string; limit?: number } = {}
 ) {
   let q = supabase
     .from('orders')
@@ -12,6 +12,7 @@ export async function listOrders(
     .eq('merchant_id', merchantId)
     .order('created_at', { ascending: false });
   if (opts.status) q = q.eq('status', opts.status);
+  if (opts.fulfillment_status) q = q.eq('fulfillment_status', opts.fulfillment_status);
   if (opts.limit) q = q.limit(opts.limit);
   const { data, error } = await q;
   if (error) throw new Error(error.message);
@@ -52,9 +53,21 @@ export async function confirmMatch(
     .eq('id', matchingResultId);
   if (updateMrErr) throw new Error(updateMrErr.message);
   if (confirm) {
+    const { data: orderRow } = await supabase
+      .from('orders')
+      .select('fulfillment_status')
+      .eq('id', mr.order_id)
+      .eq('merchant_id', merchantId)
+      .single();
+    const fulfillmentStatus = orderRow?.fulfillment_status == null ? FULFILLMENT_STATUS.PENDING_FULFILLMENT : undefined;
     await supabase
       .from('orders')
-      .update({ status: ORDER_STATUS.PAID, updated_at: new Date().toISOString() })
+      .update({
+        status: ORDER_STATUS.PAID,
+        payment_status: PAYMENT_STATUS.PAID,
+        ...(fulfillmentStatus && { fulfillment_status: fulfillmentStatus }),
+        updated_at: new Date().toISOString(),
+      })
       .eq('id', mr.order_id)
       .eq('merchant_id', merchantId);
   }

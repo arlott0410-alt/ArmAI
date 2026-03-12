@@ -20,3 +20,4 @@ export { TestResultPanel } from './TestResultPanel';
 export { IntegrationOverviewCard } from './IntegrationOverviewCard';
 export { InlineInstructionList } from './InlineInstructionList';
 export { ActionFooter } from './ActionFooter';
+export { FulfillmentStatusBadge } from './FulfillmentStatusBadge';
