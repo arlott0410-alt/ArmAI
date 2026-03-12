@@ -30,6 +30,8 @@ import { DashboardSkeleton } from '../../components/ui/DashboardSkeleton'
 import { toast } from 'sonner'
 
 const CHART_COLORS = ['var(--armai-primary)', 'var(--armai-accent)', 'var(--armai-warning)']
+const LUXURY_HOVER = { boxShadow: '0 8px 32px rgba(212,175,55,0.15)' }
+const LUXURY_TRANSITION = { duration: 0.3, ease: 'easeOut' as const }
 
 export default function SuperDashboard() {
   const { user } = useAuth()
@@ -123,42 +125,36 @@ export default function SuperDashboard() {
   return (
     <PageShell title={t('super.overview')} description={t('super.commandCenter')}>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 py-4">
-        <motion.div whileHover={{ scale: 1.02 }} transition={{ type: 'spring', stiffness: 300 }}>
+        <motion.div whileHover={LUXURY_HOVER} transition={LUXURY_TRANSITION}>
           <StatCard label={t('super.mrrThisMonth')} value={formatLAK(mrrValue)} accent />
         </motion.div>
-        <motion.div whileHover={{ scale: 1.02 }} transition={{ type: 'spring', stiffness: 300 }}>
+        <motion.div whileHover={LUXURY_HOVER} transition={LUXURY_TRANSITION}>
           <StatCard label={t('super.activeMerchants')} value={data.activeMerchants} />
         </motion.div>
-        <motion.div whileHover={{ scale: 1.02 }} transition={{ type: 'spring', stiffness: 300 }}>
+        <motion.div whileHover={LUXURY_HOVER} transition={LUXURY_TRANSITION}>
           <StatCard label={t('super.trialing')} value={kpis?.trialingMerchants ?? 0} />
         </motion.div>
-        <motion.div whileHover={{ scale: 1.02 }} transition={{ type: 'spring', stiffness: 300 }}>
+        <motion.div whileHover={LUXURY_HOVER} transition={LUXURY_TRANSITION}>
           <StatCard label={t('super.pastDue')} value={kpis?.pastDueMerchants ?? 0} />
         </motion.div>
-        <motion.div whileHover={{ scale: 1.02 }} transition={{ type: 'spring', stiffness: 300 }}>
+        <motion.div whileHover={LUXURY_HOVER} transition={LUXURY_TRANSITION}>
           <StatCard label={t('super.dueIn7Days')} value={kpis?.dueInNext7Days ?? 0} />
         </motion.div>
-        <motion.div whileHover={{ scale: 1.02 }} transition={{ type: 'spring', stiffness: 300 }}>
+        <motion.div whileHover={LUXURY_HOVER} transition={LUXURY_TRANSITION}>
           <StatCard label={t('super.newThisMonth')} value={kpis?.newMerchantsThisMonth ?? 0} />
         </motion.div>
-        <motion.div whileHover={{ scale: 1.02 }} transition={{ type: 'spring', stiffness: 300 }}>
+        <motion.div whileHover={LUXURY_HOVER} transition={LUXURY_TRANSITION}>
           <StatCard label={t('super.activationReady')} value={kpis?.activationReadyCount ?? 0} />
         </motion.div>
         {channelMetrics != null && (
           <>
-            <motion.div
-              whileHover={{ scale: 1.02 }}
-              transition={{ type: 'spring', stiffness: 300 }}
-            >
+            <motion.div whileHover={LUXURY_HOVER} transition={LUXURY_TRANSITION}>
               <StatCard
                 label={t('super.whatsappMerchants')}
                 value={channelMetrics.whatsappMerchantCount}
               />
             </motion.div>
-            <motion.div
-              whileHover={{ scale: 1.02 }}
-              transition={{ type: 'spring', stiffness: 300 }}
-            >
+            <motion.div whileHover={LUXURY_HOVER} transition={LUXURY_TRANSITION}>
               <StatCard
                 label={t('super.whatsappConnections')}
                 value={channelMetrics.whatsappActiveConnections}
@@ -175,8 +171,9 @@ export default function SuperDashboard() {
         >
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
             <motion.div
-              whileHover={{ scale: 1.01, boxShadow: '0 8px 24px rgba(0,0,0,0.08)' }}
-              className="rounded-xl border border-[var(--armai-border)] bg-[var(--armai-surface)] p-4"
+              whileHover={LUXURY_HOVER}
+              transition={LUXURY_TRANSITION}
+              className="rounded-xl border border-[var(--armai-border)] bg-[var(--armai-surface)] p-4 transition-all duration-300 ease-out"
             >
               <Card>
                 <CardBody>
@@ -190,8 +187,9 @@ export default function SuperDashboard() {
               </Card>
             </motion.div>
             <motion.div
-              whileHover={{ scale: 1.01, boxShadow: '0 8px 24px rgba(0,0,0,0.08)' }}
-              className="rounded-xl border border-[var(--armai-border)] bg-[var(--armai-surface)] p-4"
+              whileHover={LUXURY_HOVER}
+              transition={LUXURY_TRANSITION}
+              className="rounded-xl border border-[var(--armai-border)] bg-[var(--armai-surface)] p-4 transition-all duration-300 ease-out"
             >
               <Card>
                 <CardBody>
@@ -206,8 +204,9 @@ export default function SuperDashboard() {
             </motion.div>
             {messagingPieData.length > 0 && (
               <motion.div
-                whileHover={{ scale: 1.01 }}
-                className="sm:col-span-2 rounded-xl border border-[var(--armai-border)] bg-[var(--armai-surface)] p-4"
+                whileHover={LUXURY_HOVER}
+                transition={LUXURY_TRANSITION}
+                className="sm:col-span-2 rounded-xl border border-[var(--armai-border)] bg-[var(--armai-surface)] p-4 transition-all duration-300 ease-out"
               >
                 <ResponsiveContainer width="100%" height={200}>
                   <PieChart>
@@ -244,11 +243,8 @@ export default function SuperDashboard() {
         <Section title={t('super.revenue')} description={t('super.revenueDescription')}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4 items-end">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <motion.div
-                whileHover={{ scale: 1.02 }}
-                transition={{ type: 'spring', stiffness: 300 }}
-              >
-                <Card className="shadow-sm hover:shadow-md transition-shadow">
+              <motion.div whileHover={LUXURY_HOVER} transition={LUXURY_TRANSITION}>
+                <Card className="transition-all duration-300 ease-out">
                   <CardBody>
                     <div className="text-xs text-[var(--armai-text-muted)] uppercase tracking-wider mb-1">
                       {t('super.currentMonthMRR')}
@@ -259,11 +255,8 @@ export default function SuperDashboard() {
                   </CardBody>
                 </Card>
               </motion.div>
-              <motion.div
-                whileHover={{ scale: 1.02 }}
-                transition={{ type: 'spring', stiffness: 300 }}
-              >
-                <Card className="shadow-sm hover:shadow-md transition-shadow">
+              <motion.div whileHover={LUXURY_HOVER} transition={LUXURY_TRANSITION}>
+                <Card className="transition-all duration-300 ease-out">
                   <CardBody>
                     <div className="text-xs text-[var(--armai-text-muted)] uppercase tracking-wider mb-1">
                       {t('super.expectedNextBilling')}
@@ -276,8 +269,9 @@ export default function SuperDashboard() {
               </motion.div>
             </div>
             <motion.div
-              whileHover={{ scale: 1.01 }}
-              className="rounded-xl border border-[var(--armai-border)] bg-[var(--armai-surface)] p-4"
+              whileHover={LUXURY_HOVER}
+              transition={LUXURY_TRANSITION}
+              className="rounded-xl border border-[var(--armai-border)] bg-[var(--armai-surface)] p-4 transition-all duration-300 ease-out"
             >
               <div className="text-xs text-[var(--armai-text-muted)] mb-2">
                 {t('super.revenue')} (LAK)
@@ -334,10 +328,7 @@ export default function SuperDashboard() {
           <Section title={t('super.merchantBillingHealth')}>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 py-4">
               {billingHealth.overdue?.length > 0 && (
-                <motion.div
-                  whileHover={{ scale: 1.01 }}
-                  transition={{ type: 'spring', stiffness: 300 }}
-                >
+                <motion.div whileHover={LUXURY_HOVER} transition={LUXURY_TRANSITION}>
                   <Card>
                     <CardHeader title={t('super.overdue')} />
                     <CardBody>
@@ -358,10 +349,7 @@ export default function SuperDashboard() {
                 </motion.div>
               )}
               {billingHealth.dueSoon?.length > 0 && (
-                <motion.div
-                  whileHover={{ scale: 1.01 }}
-                  transition={{ type: 'spring', stiffness: 300 }}
-                >
+                <motion.div whileHover={LUXURY_HOVER} transition={LUXURY_TRANSITION}>
                   <Card>
                     <CardHeader title={t('super.dueSoon')} />
                     <CardBody>
@@ -382,10 +370,7 @@ export default function SuperDashboard() {
                 </motion.div>
               )}
               {billingHealth.trialEndingSoon?.length > 0 && (
-                <motion.div
-                  whileHover={{ scale: 1.01 }}
-                  transition={{ type: 'spring', stiffness: 300 }}
-                >
+                <motion.div whileHover={LUXURY_HOVER} transition={LUXURY_TRANSITION}>
                   <Card>
                     <CardHeader title={t('super.trialEndingSoon')} />
                     <CardBody>

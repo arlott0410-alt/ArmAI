@@ -8,8 +8,10 @@ const cardStyle: React.CSSProperties = {
   border: `1px solid ${theme.borderMuted}`,
   overflow: 'hidden',
   boxShadow: `0 0 20px ${theme.goldGlow}`,
-  transition: 'transform 0.5s ease-in-out, box-shadow 0.5s ease-in-out',
+  transition: 'box-shadow 0.3s ease-out, border-color 0.3s ease-out',
 }
+
+const LUXURY_HOVER_SHADOW = '0 8px 32px rgba(212,175,55,0.15)'
 
 export function Card({
   children,
@@ -28,7 +30,7 @@ export function Card({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: 'easeInOut' }}
-      whileHover={{ scale: 1.05, boxShadow: `0 0 24px ${theme.goldGlow}` }}
+      whileHover={{ boxShadow: LUXURY_HOVER_SHADOW }}
     >
       <div {...rest}>{children}</div>
     </motion.div>

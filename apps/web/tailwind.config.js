@@ -31,6 +31,7 @@ export default {
       boxShadow: {
         gold: '0 0 10px rgba(212, 175, 55, 0.3)',
         'gold-lg': '0 0 20px rgba(212, 175, 55, 0.25)',
+        'gold-hover': '0 8px 32px rgba(212, 175, 55, 0.15)',
       },
       transitionDuration: {
         luxury: '500ms',

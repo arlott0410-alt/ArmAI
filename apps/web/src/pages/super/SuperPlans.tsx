@@ -59,9 +59,9 @@ export default function SuperPlans() {
         <motion.button
           type="button"
           onClick={() => setCreating(true)}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--armai-primary)] text-white font-medium shadow-sm hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--armai-primary)]"
+          whileHover={{ boxShadow: '0 8px 32px rgba(212,175,55,0.2)' }}
+          transition={{ duration: 0.3, ease: 'easeOut' }}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--armai-primary)] text-white font-medium shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--armai-primary)] transition-all duration-300 ease-out"
           aria-label="Add plan"
         >
           <Plus className="h-4 w-4" />
@@ -71,8 +71,9 @@ export default function SuperPlans() {
     >
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="py-4">
         <motion.div
-          whileHover={{ boxShadow: '0 8px 24px rgba(0,0,0,0.06)' }}
-          className="rounded-xl border border-[var(--armai-border)] bg-[var(--armai-surface)] overflow-hidden glass-card"
+          whileHover={{ boxShadow: '0 8px 32px rgba(212,175,55,0.15)' }}
+          transition={{ duration: 0.3, ease: 'easeOut' }}
+          className="rounded-xl border border-[var(--armai-border)] bg-[var(--armai-surface)] overflow-hidden glass-card transition-all duration-300 ease-out"
         >
           <table className="w-full text-sm">
             <thead>
