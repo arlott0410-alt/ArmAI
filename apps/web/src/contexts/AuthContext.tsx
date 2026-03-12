@@ -1,11 +1,11 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
-import { createClient } from '@supabase/supabase-js'
 import { getBaseUrl } from '../lib/api'
+import { getSupabase } from '../lib/supabase'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL ?? ''
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY ?? ''
-
-const supabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null
+export interface SignUpResult {
+  needsConfirmation?: boolean
+  email?: string
+}
 
 export interface AuthUser {
   id: string
@@ -20,7 +20,8 @@ type AuthState = { user: AuthUser | null; loading: boolean; error: string | null
 const AuthContext = createContext<
   AuthState & {
     signIn: (email: string, password: string) => Promise<void>
-    signUp: (email: string, password: string) => Promise<void>
+    signUp: (email: string, password: string) => Promise<SignUpResult>
+    resendConfirmation: (email: string) => Promise<void>
     signOut: () => Promise<void>
   }
 >(null!)
@@ -49,6 +50,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   useEffect(() => {
+    const supabase = getSupabase()
     if (!supabase) {
       setState({ user: null, loading: false, error: null })
       return
@@ -80,6 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const signIn = async (email: string, password: string) => {
+    const supabase = getSupabase()
     if (!supabase) throw new Error('Supabase not configured')
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) throw new Error(error.message)
@@ -89,37 +92,53 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const signUp = async (email: string, password: string) => {
+  const signUp = async (email: string, password: string): Promise<SignUpResult> => {
+    const supabase = getSupabase()
     if (!supabase) throw new Error('Supabase not configured')
     const { data, error } = await supabase.auth.signUp({ email, password })
+    if (error) {
+      if (
+        error.message?.toLowerCase().includes('already registered') ||
+        error.code === 'user_already_exists'
+      ) {
+        throw new Error('Email already registered. Sign in or use another email.')
+      }
+      throw new Error(error.message)
+    }
+    if (data.session?.access_token) {
+      const token = data.session.access_token
+      const base = getBaseUrl()
+      const onboardRes = await fetch(`${base}/onboard/merchant`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      })
+      const onboardData = await onboardRes.json().catch(() => ({}))
+      if (!onboardRes.ok) {
+        const msg = (onboardData as { error?: string }).error ?? 'Onboard failed'
+        throw new Error(msg)
+      }
+      const user = await fetchMe(token)
+      setState({ user, loading: false, error: null })
+      return {}
+    }
+    return { needsConfirmation: true, email: data.user?.email ?? email }
+  }
+
+  const resendConfirmation = async (email: string) => {
+    const supabase = getSupabase()
+    if (!supabase) throw new Error('Supabase not configured')
+    const { error } = await supabase.auth.resend({ type: 'signup', email })
     if (error) throw new Error(error.message)
-    if (!data.session?.access_token) {
-      throw new Error(
-        'Signup succeeded but no session. Check your email to confirm, or try logging in.'
-      )
-    }
-    const token = data.session.access_token
-    const base = getBaseUrl()
-    const onboardRes = await fetch(`${base}/onboard/merchant`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    })
-    const onboardData = await onboardRes.json().catch(() => ({}))
-    if (!onboardRes.ok) {
-      const msg = (onboardData as { error?: string }).error ?? 'Onboard failed'
-      throw new Error(msg)
-    }
-    const user = await fetchMe(token)
-    setState({ user, loading: false, error: null })
   }
 
   const signOut = async () => {
+    const supabase = getSupabase()
     if (supabase) await supabase.auth.signOut()
     setState({ user: null, loading: false, error: null })
   }
 
   return (
-    <AuthContext.Provider value={{ ...state, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ ...state, signIn, signUp, resendConfirmation, signOut }}>
       {children}
     </AuthContext.Provider>
   )

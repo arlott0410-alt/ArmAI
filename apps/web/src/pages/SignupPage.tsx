@@ -1,8 +1,11 @@
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useI18n } from '../i18n/I18nProvider'
 import { toast } from 'sonner'
+
+const RESEND_COOLDOWN_SEC = 60
 
 type SignupForm = {
   email: string
@@ -20,9 +23,12 @@ function validateSignup(data: SignupForm): Record<string, string> {
 }
 
 export default function SignupPage() {
-  const { signUp, user, loading } = useAuth()
+  const { signUp, resendConfirmation, user, loading } = useAuth()
   const { t } = useI18n()
   const navigate = useNavigate()
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null)
+  const [resendCooldown, setResendCooldown] = useState(0)
+  const [resendLoading, setResendLoading] = useState(false)
 
   const {
     register,
@@ -34,6 +40,12 @@ export default function SignupPage() {
     defaultValues: { email: '', password: '', confirmPassword: '' },
   })
 
+  useEffect(() => {
+    if (resendCooldown <= 0) return
+    const t = setTimeout(() => setResendCooldown((c) => c - 1), 1000)
+    return () => clearTimeout(t)
+  }, [resendCooldown])
+
   const onSubmit = async (data: SignupForm) => {
     clearErrors('root')
     const validation = validateSignup(data)
@@ -44,7 +56,11 @@ export default function SignupPage() {
       return
     }
     try {
-      await signUp(data.email, data.password)
+      const result = await signUp(data.email, data.password)
+      if (result.needsConfirmation && result.email) {
+        setPendingEmail(result.email)
+        return
+      }
       toast.success(t('signup.success'))
       navigate('/merchant/dashboard', { replace: true })
     } catch (err) {
@@ -54,10 +70,64 @@ export default function SignupPage() {
     }
   }
 
+  const onResend = async () => {
+    if (!pendingEmail || resendCooldown > 0 || resendLoading) return
+    setResendLoading(true)
+    try {
+      await resendConfirmation(pendingEmail)
+      toast.success(t('confirm.resendSuccess'))
+      setResendCooldown(RESEND_COOLDOWN_SEC)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Resend failed')
+    } finally {
+      setResendLoading(false)
+    }
+  }
+
   if (user) {
     const to = user.role === 'super_admin' ? '/super/dashboard' : '/merchant/dashboard'
     navigate(to, { replace: true })
     return null
+  }
+
+  if (pendingEmail) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[var(--armai-bg)] p-4">
+        <div className="w-full max-w-[400px] rounded-xl border border-[var(--armai-border)] bg-[var(--armai-surface)] shadow-xl p-8">
+          <div className="flex items-baseline gap-2 mb-2">
+            <span className="text-2xl font-bold text-[var(--armai-text)] tracking-tight">
+              ArmAI
+            </span>
+            <span className="text-xs font-semibold text-[var(--armai-primary)] uppercase tracking-wider">
+              Platform
+            </span>
+          </div>
+          <h1 className="text-lg font-semibold text-[var(--armai-text)] mb-2">
+            {t('confirm.confirmEmailTitle')}
+          </h1>
+          <p className="text-sm text-[var(--armai-text-secondary)] mb-4">
+            {t('confirm.emailSentTo').replace('{email}', pendingEmail)}
+          </p>
+          <button
+            type="button"
+            onClick={onResend}
+            disabled={resendCooldown > 0 || resendLoading}
+            className="w-full py-3 px-4 rounded-lg font-semibold border-2 border-[var(--armai-primary)] text-[var(--armai-primary)] bg-transparent hover:bg-[var(--armai-primary)]/10 disabled:opacity-50 transition-colors"
+          >
+            {resendLoading
+              ? t('common.loading')
+              : resendCooldown > 0
+                ? t('confirm.resendCooldown').replace('{seconds}', String(resendCooldown))
+                : t('confirm.resendButton')}
+          </button>
+          <p className="mt-6 text-center text-sm text-[var(--armai-text-muted)]">
+            <Link to="/login" className="font-medium text-[var(--armai-primary)] hover:underline">
+              {t('login.signIn')}
+            </Link>
+          </p>
+        </div>
+      </div>
+    )
   }
 
   return (
