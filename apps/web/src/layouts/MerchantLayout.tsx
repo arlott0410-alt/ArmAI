@@ -2,17 +2,11 @@ import { useState, useEffect } from 'react'
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard,
-  Package,
-  FolderTree,
-  BookOpen,
-  Tag,
   CreditCard,
-  RefreshCw,
-  Activity,
-  Send,
   MessageCircle,
-  Users,
+  Bot,
   Settings,
+  Users,
   CreditCard as PlanIcon,
   ChevronLeft,
   ChevronRight,
@@ -20,7 +14,11 @@ import {
   Moon,
   Bell,
   Menu,
+  ShoppingBag,
+  Activity,
 } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
+import type { I18nKey } from '../i18n/keys'
 import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from '../contexts/ThemeContext'
 import { useI18n } from '../i18n/I18nProvider'
@@ -32,22 +30,24 @@ import { useMediaQuery } from '../hooks/useMediaQuery'
 
 const SIDEBAR_WIDTH = 240
 
-const merchantNavItems = [
-  { to: '/merchant/dashboard', label: 'nav.overview', icon: LayoutDashboard, end: true },
-  { to: '/merchant/orders', label: 'nav.orders', icon: Activity, end: false },
-  { to: '/merchant/products', label: 'nav.products', icon: Package, end: false },
-  { to: '/merchant/categories', label: 'nav.categories', icon: FolderTree, end: false },
-  { to: '/merchant/knowledge', label: 'nav.knowledge', icon: BookOpen, end: false },
-  { to: '/merchant/promotions', label: 'nav.promotions', icon: Tag, end: false },
-  { to: '/merchant/payment-accounts', label: 'nav.paymentAccounts', icon: CreditCard, end: false },
-  { to: '/merchant/bank-sync', label: 'nav.bankSync', icon: RefreshCw, end: false },
-  { to: '/merchant/operations', label: 'nav.operations', icon: Activity, end: false },
-  { to: '/merchant/telegram', label: 'nav.telegram', icon: Send, end: false },
-  { to: '/merchant/channels', label: 'nav.messaging', icon: MessageCircle, end: false },
-  { to: '/merchant/customers', label: 'nav.customers', icon: Users, end: false },
-  { to: '/merchant/settings', label: 'nav.settings', icon: Settings, end: false },
-  { to: '/pricing', label: 'nav.plans', icon: PlanIcon, end: false },
-] as const
+type NavItem = {
+  path: string
+  label: I18nKey
+  icon: LucideIcon
+  end: boolean
+  children?: never
+}
+
+const getMerchantNavItems = (): NavItem[] => [
+  { path: '/merchant/dashboard', label: 'nav.overview', icon: LayoutDashboard, end: true },
+  { path: '/merchant/orders', label: 'nav.orders', icon: Activity, end: false },
+  { path: '/merchant/products', label: 'nav.productsAndCategories', icon: ShoppingBag, end: false },
+  { path: '/merchant/payment-config', label: 'nav.paymentConfig', icon: CreditCard, end: false },
+  { path: '/merchant/channels', label: 'nav.channels', icon: MessageCircle, end: false },
+  { path: '/merchant/ai-config', label: 'nav.aiConfig', icon: Bot, end: false },
+  { path: '/merchant/general-settings', label: 'nav.generalSettings', icon: Settings, end: false },
+  { path: '/merchant/customers', label: 'nav.customers', icon: Users, end: false },
+]
 
 export default function MerchantLayout() {
   const { user, signOut } = useAuth()
@@ -89,20 +89,34 @@ export default function MerchantLayout() {
       ? ' bg-[var(--armai-primary)]/10 text-[var(--armai-primary)] border-l-4 border-l-[var(--armai-primary)] shadow-gold'
       : '')
 
-  const renderNavLinks = (showLabels: boolean) =>
-    merchantNavItems.map(({ to, label, icon: Icon, end }) => (
+  const merchantNavItems = getMerchantNavItems()
+  const renderNavLinks = (showLabels: boolean) => (
+    <>
+      {merchantNavItems.map(({ path, label, icon: Icon, end }) => (
+        <NavLink
+          key={path}
+          to={path}
+          className={navLinkClass}
+          role="menuitem"
+          end={end}
+          onClick={() => setDrawerOpen(false)}
+        >
+          <Icon className="h-4 w-4 shrink-0" />
+          {showLabels && t(label)}
+        </NavLink>
+      ))}
       <NavLink
-        key={to}
-        to={to}
+        to="/pricing"
         className={navLinkClass}
         role="menuitem"
-        end={end}
+        end={false}
         onClick={() => setDrawerOpen(false)}
       >
-        <Icon className="h-4 w-4 shrink-0" />
-        {showLabels && t(label)}
+        <PlanIcon className="h-4 w-4 shrink-0" />
+        {showLabels && t('nav.plans')}
       </NavLink>
-    ))
+    </>
+  )
 
   return (
     <div

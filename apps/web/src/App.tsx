@@ -17,18 +17,15 @@ const SuperAudit = lazy(() => import('./pages/super/SuperAudit'))
 const SuperPlans = lazy(() => import('./pages/super/SuperPlans'))
 const MerchantDashboard = lazy(() => import('./pages/merchant/MerchantDashboard'))
 const MerchantOrders = lazy(() => import('./pages/merchant/MerchantOrders'))
-const MerchantBankSync = lazy(() => import('./pages/merchant/MerchantBankSync'))
-const MerchantSettings = lazy(() => import('./pages/merchant/MerchantSettings'))
-const MerchantProducts = lazy(() => import('./pages/merchant/MerchantProducts'))
-const MerchantCategories = lazy(() => import('./pages/merchant/MerchantCategories'))
-const MerchantKnowledge = lazy(() => import('./pages/merchant/MerchantKnowledge'))
-const MerchantPromotions = lazy(() => import('./pages/merchant/MerchantPromotions'))
-const MerchantPaymentAccounts = lazy(() => import('./pages/merchant/MerchantPaymentAccounts'))
 const MerchantOrderDetail = lazy(() => import('./pages/merchant/MerchantOrderDetail'))
-const MerchantTelegram = lazy(() => import('./pages/merchant/MerchantTelegram'))
-const MerchantChannels = lazy(() => import('./pages/merchant/MerchantChannels'))
+const ProductsAndCategoriesPage = lazy(() => import('./pages/merchant/ProductsAndCategoriesPage'))
+const PaymentConfigPage = lazy(() => import('./pages/merchant/PaymentConfigPage'))
+const ChannelsPage = lazy(() => import('./pages/merchant/ChannelsPage'))
+const AiConfigPage = lazy(() => import('./pages/merchant/AiConfigPage'))
+const GeneralSettingsPage = lazy(() => import('./pages/merchant/GeneralSettingsPage'))
 const MerchantCustomers = lazy(() => import('./pages/merchant/MerchantCustomers'))
 const MerchantCustomerDetail = lazy(() => import('./pages/merchant/MerchantCustomerDetail'))
+const MerchantPromotions = lazy(() => import('./pages/merchant/MerchantPromotions'))
 const MerchantOperationsFeed = lazy(() => import('./pages/merchant/MerchantOperationsFeed'))
 
 function ProtectedRoute({
@@ -110,18 +107,24 @@ export default function App() {
           <Route path="dashboard" element={<MerchantDashboard />} />
           <Route path="orders/:orderId" element={<MerchantOrderDetail />} />
           <Route path="orders" element={<MerchantOrders />} />
-          <Route path="products" element={<MerchantProducts />} />
-          <Route path="categories" element={<MerchantCategories />} />
-          <Route path="knowledge" element={<MerchantKnowledge />} />
-          <Route path="promotions" element={<MerchantPromotions />} />
-          <Route path="payment-accounts" element={<MerchantPaymentAccounts />} />
-          <Route path="bank-sync" element={<MerchantBankSync />} />
-          <Route path="operations" element={<MerchantOperationsFeed />} />
-          <Route path="telegram" element={<MerchantTelegram />} />
-          <Route path="channels" element={<MerchantChannels />} />
+          <Route path="products" element={<ProductsAndCategoriesPage />} />
+          <Route path="payment-config" element={<PaymentConfigPage />} />
+          <Route path="channels" element={<ChannelsPage />} />
+          <Route path="ai-config" element={<AiConfigPage />} />
+          <Route path="general-settings" element={<GeneralSettingsPage />} />
           <Route path="customers" element={<MerchantCustomers />} />
           <Route path="customers/:id" element={<MerchantCustomerDetail />} />
-          <Route path="settings" element={<MerchantSettings />} />
+          <Route path="categories" element={<Navigate to="/merchant/products" replace />} />
+          <Route path="knowledge" element={<Navigate to="/merchant/ai-config" replace />} />
+          <Route path="promotions" element={<MerchantPromotions />} />
+          <Route
+            path="payment-accounts"
+            element={<Navigate to="/merchant/payment-config" replace />}
+          />
+          <Route path="bank-sync" element={<Navigate to="/merchant/payment-config" replace />} />
+          <Route path="operations" element={<MerchantOperationsFeed />} />
+          <Route path="telegram" element={<Navigate to="/merchant/channels" replace />} />
+          <Route path="settings" element={<Navigate to="/merchant/general-settings" replace />} />
         </Route>
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/checkout/success" element={<CheckoutSuccess />} />
